@@ -34,7 +34,7 @@ return new class extends Migration
                         $table->dropColumn(['email', 'email_verified_at', 'password']);
                         
                         // Add new columns
-                        $table->string('username')->unique()->after('name');
+                        $table->string('username', 191)->unique()->after('name');
                         $table->string('pin')->after('username');
                         $table->enum('role', ['super_admin', 'cashier'])->default('cashier')->after('pin');
                         $table->enum('status', ['active', 'inactive'])->default('active')->after('role');
@@ -44,7 +44,7 @@ return new class extends Migration
             // If email doesn't exist, check if we need to add the new columns
             elseif (!Schema::hasColumn('users', 'username')) {
                 Schema::table('users', function (Blueprint $table) {
-                    $table->string('username')->unique()->after('name');
+                    $table->string('username', 191)->unique()->after('name');
                     $table->string('pin')->after('username');
                     $table->enum('role', ['super_admin', 'cashier'])->default('cashier')->after('pin');
                     $table->enum('status', ['active', 'inactive'])->default('active')->after('role');
@@ -65,7 +65,7 @@ return new class extends Migration
         Schema::create('users_new', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('username')->unique();
+            $table->string('username', 191)->unique();
             $table->string('pin');
             $table->string('role')->default('cashier'); // SQLite doesn't support enum, use string
             $table->string('status')->default('active');

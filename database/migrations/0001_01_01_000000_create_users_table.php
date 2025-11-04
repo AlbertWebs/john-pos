@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('username')->unique();
+            $table->string('username', 191)->unique();
             $table->string('pin'); // 4-digit PIN (hashed)
             $table->enum('role', ['super_admin', 'cashier'])->default('cashier');
             $table->enum('status', ['active', 'inactive'])->default('active');
