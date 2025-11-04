@@ -154,32 +154,52 @@
                     </div>
 
                     <!-- Vehicle Models (Multiple Selection) -->
-                    <div>
-                        <label for="vehicle_model_ids" class="block text-sm font-medium text-gray-700 mb-2">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Vehicle Models <span class="text-gray-500 text-xs">(Select multiple if item fits multiple cars)</span>
                         </label>
-                        <select 
-                            name="vehicle_model_ids[]" 
-                            id="vehicle_model_ids"
-                            multiple
-                            size="8"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('vehicle_model_ids') border-red-500 @enderror"
-                            style="min-height: 200px;"
-                        >
+                        <div class="border border-gray-300 rounded-lg p-4 max-h-96 overflow-y-auto bg-gray-50 @error('vehicle_model_ids') border-red-500 @enderror" x-data="{ selectedCount: {{ count(old('vehicle_model_ids', [])) }} }">
+                            <div class="flex justify-between items-center mb-3 pb-2 border-b">
+                                <span class="text-sm font-medium text-gray-700">
+                                    <span x-text="selectedCount"></span> model(s) selected
+                                </span>
+                                <button 
+                                    type="button"
+                                    @click="Array.from($el.closest('[x-data]').querySelectorAll('input[type=checkbox]')).forEach(cb => cb.checked = false); selectedCount = 0;"
+                                    class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                    Clear All
+                                </button>
+                            </div>
                             @foreach($allVehicleModels->groupBy('vehicle_make_id') as $makeId => $models)
                                 @php
                                     $make = $models->first()->vehicleMake;
                                 @endphp
-                                <optgroup label="{{ $make->make_name }}">
-                                    @foreach($models as $model)
-                                        <option value="{{ $model->id }}" {{ in_array($model->id, old('vehicle_model_ids', [])) ? 'selected' : '' }}>
-                                            {{ $model->model_name }}@if($model->year_start && $model->year_end) ({{ $model->year_start }}-{{ $model->year_end }})@endif
-                                        </option>
-                                    @endforeach
-                                </optgroup>
+                                <div class="mb-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2 text-sm">{{ $make->make_name }}</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ml-4">
+                                        @foreach($models as $model)
+                                            <label class="flex items-center space-x-2 p-2 hover:bg-white rounded cursor-pointer transition">
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="vehicle_model_ids[]" 
+                                                    value="{{ $model->id }}"
+                                                    {{ in_array($model->id, old('vehicle_model_ids', [])) ? 'checked' : '' }}
+                                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                                                    @change="selectedCount = Array.from($el.closest('[x-data]').querySelectorAll('input[type=checkbox]')).filter(cb => cb.checked).length"
+                                                >
+                                                <span class="text-sm text-gray-700">
+                                                    {{ $model->model_name }}@if($model->year_start && $model->year_end) <span class="text-gray-500">({{ $model->year_start }}-{{ $model->year_end }})</span>@endif
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
                             @endforeach
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple models</p>
+                            @if($allVehicleModels->isEmpty())
+                                <p class="text-sm text-gray-500 text-center py-4">No vehicle models available. Please add vehicle models first.</p>
+                            @endif
+                        </div>
                         @error('vehicle_model_ids')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
