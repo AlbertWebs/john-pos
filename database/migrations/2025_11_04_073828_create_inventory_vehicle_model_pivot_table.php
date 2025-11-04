@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('inventory_vehicle_model', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('inventory_id')->constrained()->onDelete('cascade');
+            $table->foreignId('inventory_id')->constrained('inventory')->onDelete('cascade');
             $table->foreignId('vehicle_model_id')->constrained()->onDelete('cascade');
             $table->timestamps();
             
