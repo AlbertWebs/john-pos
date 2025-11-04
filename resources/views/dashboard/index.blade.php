@@ -74,25 +74,33 @@
         <!-- Daily Sales Chart -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Daily Sales (Last 7 Days)</h3>
-            <canvas id="dailySalesChart" height="100"></canvas>
+            <div class="relative" style="height: 300px;">
+                <canvas id="dailySalesChart"></canvas>
+            </div>
         </div>
 
         <!-- Weekly Sales Chart -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Weekly Sales (Last 8 Weeks)</h3>
-            <canvas id="weeklySalesChart" height="100"></canvas>
+            <div class="relative" style="height: 300px;">
+                <canvas id="weeklySalesChart"></canvas>
+            </div>
         </div>
 
         <!-- Monthly Sales Chart -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Sales (Last 6 Months)</h3>
-            <canvas id="monthlySalesChart" height="100"></canvas>
+            <div class="relative" style="height: 300px;">
+                <canvas id="monthlySalesChart"></canvas>
+            </div>
         </div>
 
         <!-- Payment Methods Chart -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Methods Distribution</h3>
-            <canvas id="paymentMethodsChart" height="100"></canvas>
+            <div class="relative" style="height: 300px;">
+                <canvas id="paymentMethodsChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -156,22 +164,28 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-// Chart data from server
+// Chart data from server - ensure arrays are properly formatted
 const dailyData = @json($stats['daily_sales'] ?? ['labels' => [], 'revenue' => [], 'transactions' => []]);
 const weeklyData = @json($stats['weekly_sales'] ?? ['labels' => [], 'revenue' => [], 'transactions' => []]);
 const monthlyData = @json($stats['monthly_sales'] ?? ['labels' => [], 'revenue' => [], 'transactions' => []]);
 const paymentData = @json($stats['payment_methods'] ?? ['labels' => [], 'amounts' => [], 'counts' => []]);
 
+// Ensure arrays are not null/undefined
+const ensureArray = (arr) => Array.isArray(arr) ? arr : [];
+
 // Daily Sales Chart
 const dailyCtx = document.getElementById('dailySalesChart');
 if (dailyCtx) {
+    const labels = ensureArray(dailyData.labels);
+    const revenue = ensureArray(dailyData.revenue).map(v => parseFloat(v) || 0);
+    
     new Chart(dailyCtx, {
         type: 'line',
         data: {
-            labels: dailyData.labels,
+            labels: labels.length > 0 ? labels : ['No Data'],
             datasets: [{
                 label: 'Revenue (KES)',
-                data: dailyData.revenue,
+                data: revenue.length > 0 ? revenue : [0],
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 tension: 0.4,
@@ -204,13 +218,16 @@ if (dailyCtx) {
 // Weekly Sales Chart
 const weeklyCtx = document.getElementById('weeklySalesChart');
 if (weeklyCtx) {
+    const labels = ensureArray(weeklyData.labels);
+    const revenue = ensureArray(weeklyData.revenue).map(v => parseFloat(v) || 0);
+    
     new Chart(weeklyCtx, {
         type: 'bar',
         data: {
-            labels: weeklyData.labels,
+            labels: labels.length > 0 ? labels : ['No Data'],
             datasets: [{
                 label: 'Revenue (KES)',
-                data: weeklyData.revenue,
+                data: revenue.length > 0 ? revenue : [0],
                 backgroundColor: 'rgba(16, 185, 129, 0.8)',
                 borderColor: 'rgb(16, 185, 129)',
                 borderWidth: 1
@@ -242,20 +259,24 @@ if (weeklyCtx) {
 // Monthly Sales Chart
 const monthlyCtx = document.getElementById('monthlySalesChart');
 if (monthlyCtx) {
+    const labels = ensureArray(monthlyData.labels);
+    const revenue = ensureArray(monthlyData.revenue).map(v => parseFloat(v) || 0);
+    const transactions = ensureArray(monthlyData.transactions).map(v => parseFloat(v) || 0);
+    
     new Chart(monthlyCtx, {
         type: 'line',
         data: {
-            labels: monthlyData.labels,
+            labels: labels.length > 0 ? labels : ['No Data'],
             datasets: [{
                 label: 'Revenue (KES)',
-                data: monthlyData.revenue,
+                data: revenue.length > 0 ? revenue : [0],
                 borderColor: 'rgb(139, 92, 246)',
                 backgroundColor: 'rgba(139, 92, 246, 0.1)',
                 tension: 0.4,
                 fill: true
             }, {
                 label: 'Transactions',
-                data: monthlyData.transactions,
+                data: transactions.length > 0 ? transactions : [0],
                 borderColor: 'rgb(236, 72, 153)',
                 backgroundColor: 'rgba(236, 72, 153, 0.1)',
                 tension: 0.4,
@@ -301,18 +322,24 @@ if (monthlyCtx) {
 // Payment Methods Chart
 const paymentCtx = document.getElementById('paymentMethodsChart');
 if (paymentCtx) {
+    const labels = ensureArray(paymentData.labels);
+    const amounts = ensureArray(paymentData.amounts).map(v => parseFloat(v) || 0);
+    const colors = [
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(236, 72, 153, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(251, 191, 36, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+    ];
+    
     new Chart(paymentCtx, {
         type: 'doughnut',
         data: {
-            labels: paymentData.labels,
+            labels: labels.length > 0 ? labels : ['No Data'],
             datasets: [{
-                data: paymentData.amounts,
-                backgroundColor: [
-                    'rgba(59, 130, 246, 0.8)',
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(236, 72, 153, 0.8)',
-                    'rgba(139, 92, 246, 0.8)',
-                ],
+                data: amounts.length > 0 ? amounts : [0],
+                backgroundColor: colors.slice(0, Math.max(labels.length, 1)),
                 borderWidth: 2,
                 borderColor: '#fff'
             }]

@@ -6,7 +6,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Inventory;
 use App\Models\InventoryMovement;
-use App\Models\ReturnModel as Return;
+use App\Models\ReturnModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,7 @@ class ReturnController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Return::with(['sale', 'part', 'user']);
+        $query = ReturnModel::with(['sale', 'part', 'user']);
 
         // Date filters
         if ($request->filled('start_date')) {
@@ -70,7 +70,7 @@ class ReturnController extends Controller
             }
 
             // Check if item was already returned
-            $alreadyReturned = Return::where('sale_item_id', $validated['sale_item_id'])
+            $alreadyReturned = ReturnModel::where('sale_item_id', $validated['sale_item_id'])
                 ->sum('quantity_returned');
             
             if (($alreadyReturned + $validated['quantity']) > $saleItem->quantity) {
@@ -78,7 +78,7 @@ class ReturnController extends Controller
             }
 
             // Create return record
-            $return = Return::create([
+            $return = ReturnModel::create([
                 'sale_id' => $validated['sale_id'],
                 'sale_item_id' => $validated['sale_item_id'],
                 'part_id' => $validated['part_id'],
@@ -117,7 +117,7 @@ class ReturnController extends Controller
         }
     }
 
-    public function show(Return $return)
+    public function show(ReturnModel $return)
     {
         $return->load(['sale.customer', 'sale.user', 'part', 'user']);
         return view('returns.show', compact('return'));
@@ -128,7 +128,7 @@ class ReturnController extends Controller
         $sale = Sale::with(['saleItems.part'])->findOrFail($saleId);
         
         $items = $sale->saleItems->map(function($item) {
-            $returned = Return::where('sale_item_id', $item->id)->sum('quantity_returned');
+            $returned = ReturnModel::where('sale_item_id', $item->id)->sum('quantity_returned');
             return [
                 'id' => $item->id,
                 'part_id' => $item->part_id,

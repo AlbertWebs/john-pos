@@ -17,7 +17,7 @@
         @auth
         <aside 
             :class="sidebarCollapsed ? 'w-20' : 'w-64'" 
-            class="bg-gradient-to-b from-blue-600 via-blue-700 to-indigo-800 shadow-2xl fixed h-full transition-all duration-300 z-50"
+            class="bg-blue-900 shadow-2xl fixed h-full transition-all duration-300 z-50"
             x-data="sidebar()"
         >
             <!-- Logo & Toggle -->
@@ -25,11 +25,13 @@
                 <div class="flex items-center justify-between">
                     <div x-show="!sidebarCollapsed" class="flex items-center space-x-2">
                         <div class="bg-white rounded-lg p-2">
-                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                            <svg class="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M5 16L3 5l5.5 1L12 4l3.5 2L21 5l-2 11H5zm14.3-4.3c-.4 1.7-1.1 3.1-2.1 4.1s-2.4 1.5-4.1 1.5c-1.7 0-3.1-.5-4.1-1.5s-1.7-2.4-2.1-4.1c-.4-1.7-.4-3.5 0-5.3.4-1.7 1.1-3.1 2.1-4.1s2.4-1.5 4.1-1.5c1.7 0 3.1.5 4.1 1.5s1.7 2.4 2.1 4.1c.4 1.8.4 3.6 0 5.3zm-2.8-1.2c.3-1.3.3-2.7 0-4-.3-1.3-.8-2.3-1.5-3s-1.7-1.2-3-1.5c-1.3-.3-2.7-.3-4 0-1.3.3-2.3.8-3 1.5s-1.2 1.7-1.5 3c-.3 1.3-.3 2.7 0 4 .3 1.3.8 2.3 1.5 3s1.7 1.2 3 1.5c1.3.3 2.7.3 4 0 1.3-.3 2.3-.8 3-1.5s1.2-1.7 1.5-3z"/>
+                                <circle cx="12" cy="9" r="1.5" fill="currentColor"/>
+                                <circle cx="12" cy="13" r="1.5" fill="currentColor"/>
                             </svg>
                         </div>
-                        <h1 class="text-lg font-bold text-white">POS System</h1>
+                        <h1 class="text-lg font-bold text-white">Royal-POS </h1>
                     </div>
                     <button 
                         @click="sidebarCollapsed = !sidebarCollapsed"
@@ -182,6 +184,15 @@
                                 </svg>
                                 <span x-show="!sidebarCollapsed">Loyalty Points</span>
                             </a>
+                            <a href="{{ route('pending-payments.index') }}" 
+                               class="flex items-center {{ request()->routeIs('pending-payments.*') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                               title="Pending Payments"
+                            >
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">Pending Payments</span>
+                            </a>
                         </div>
                     </div>
                     @endcan
@@ -316,6 +327,21 @@
         function appLayout() {
             return {
                 sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true' || false,
+                
+                init() {
+                    // Automatically request fullscreen after login
+                    // Only if not already in fullscreen mode
+                    // This runs on authenticated pages only (layout is only loaded for auth users)
+                    if (!document.fullscreenElement) {
+                        // Small delay to ensure page is fully loaded
+                        setTimeout(() => {
+                            document.documentElement.requestFullscreen().catch(err => {
+                                // Silently fail if user doesn't allow fullscreen or browser doesn't support it
+                                console.log(`Fullscreen not available: ${err.message}`);
+                            });
+                        }, 500);
+                    }
+                },
                 
                 toggleFullscreen() {
                     if (!document.fullscreenElement) {

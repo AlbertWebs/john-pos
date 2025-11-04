@@ -63,25 +63,38 @@ class InventorySeeder extends Seeder
         ];
 
         foreach ($parts as $index => $part) {
-            Inventory::create([
-                'part_number' => $part['part_number'],
-                'sku' => 'SKU-' . str_pad($index + 1, 6, '0', STR_PAD_LEFT),
-                'barcode' => 'BC' . str_pad($index + 1, 10, '0', STR_PAD_LEFT),
-                'name' => $part['name'],
-                'description' => 'High quality ' . $part['name'] . ' for various vehicle models',
-                'category_id' => $categories->random()->id,
-                'brand_id' => $brands->random()->id,
-                'vehicle_make_id' => $makes->random()->id,
-                'vehicle_model_id' => $models->random()->id ?? null,
-                'year_range' => '2010-2024',
-                'cost_price' => $part['cost'],
-                'min_price' => $part['min'],
-                'selling_price' => $part['selling'],
-                'stock_quantity' => $part['stock'],
-                'reorder_level' => $part['reorder'],
-                'location' => 'Shelf ' . chr(65 + ($index % 10)) . '-' . (($index % 20) + 1),
-                'status' => 'active',
-            ]);
+            // Get the next available barcode number
+            $barcodeNumber = $index + 1;
+            $barcode = 'BC' . str_pad($barcodeNumber, 10, '0', STR_PAD_LEFT);
+            
+            // Ensure barcode is unique - find next available if exists
+            while (Inventory::where('barcode', $barcode)->exists()) {
+                $barcodeNumber++;
+                $barcode = 'BC' . str_pad($barcodeNumber, 10, '0', STR_PAD_LEFT);
+            }
+            
+            // Use updateOrCreate to avoid duplicates based on part_number
+            Inventory::updateOrCreate(
+                ['part_number' => $part['part_number']],
+                [
+                    'sku' => 'SKU-' . str_pad($index + 1, 6, '0', STR_PAD_LEFT),
+                    'barcode' => $barcode,
+                    'name' => $part['name'],
+                    'description' => 'High quality ' . $part['name'] . ' for various vehicle models',
+                    'category_id' => $categories->random()->id,
+                    'brand_id' => $brands->random()->id,
+                    'vehicle_make_id' => $makes->random()->id,
+                    'vehicle_model_id' => $models->random()->id ?? null,
+                    'year_range' => '2010-2024',
+                    'cost_price' => $part['cost'],
+                    'min_price' => $part['min'],
+                    'selling_price' => $part['selling'],
+                    'stock_quantity' => $part['stock'],
+                    'reorder_level' => $part['reorder'],
+                    'location' => 'Shelf ' . chr(65 + ($index % 10)) . '-' . (($index % 20) + 1),
+                    'status' => 'active',
+                ]
+            );
         }
     }
 }

@@ -94,6 +94,7 @@
                 <button
                     type="submit"
                     :disabled="pin.length !== 4 || !username"
+                    @click="ensureFormValues()"
                     class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Login
@@ -121,6 +122,15 @@
                                 if (pinInput) {
                                     pinInput.value = this.pin;
                                 }
+                                // Ensure CSRF token is present
+                                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                                if (csrfToken && !form.querySelector('input[name="_token"]')) {
+                                    const csrfInput = document.createElement('input');
+                                    csrfInput.type = 'hidden';
+                                    csrfInput.name = '_token';
+                                    csrfInput.value = csrfToken.content;
+                                    form.appendChild(csrfInput);
+                                }
                                 form.submit();
                             }, 300);
                         }
@@ -133,6 +143,26 @@
                     const pinInput = form.querySelector('input[name="pin"]');
                     if (pinInput) {
                         pinInput.value = '';
+                    }
+                },
+                
+                ensureFormValues() {
+                    const form = document.getElementById('loginForm');
+                    const pinInput = form.querySelector('input[name="pin"]');
+                    if (pinInput) {
+                        pinInput.value = this.pin;
+                    }
+                    // Ensure CSRF token is present and up-to-date
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfToken) {
+                        let tokenInput = form.querySelector('input[name="_token"]');
+                        if (!tokenInput) {
+                            tokenInput = document.createElement('input');
+                            tokenInput.type = 'hidden';
+                            tokenInput.name = '_token';
+                            form.appendChild(tokenInput);
+                        }
+                        tokenInput.value = csrfToken.content;
                     }
                 }
             }

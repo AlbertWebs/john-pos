@@ -3,49 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Payment;
+use App\Models\PendingPayment;
+use App\Services\MpesaService;
 
 class MpesaController extends Controller
 {
-    /**
-     * M-Pesa API Configuration
-     * Sandbox credentials for testing
-     */
-    private function getMpesaConfig()
+    protected $mpesaService;
+
+    public function __construct(MpesaService $mpesaService)
     {
-        return [
-            'consumer_key' => env('MPESA_CONSUMER_KEY', 'YOUR_CONSUMER_KEY'),
-            'consumer_secret' => env('MPESA_CONSUMER_SECRET', 'YOUR_CONSUMER_SECRET'),
-            'passkey' => env('MPESA_PASSKEY', 'YOUR_PASSKEY'),
-            'shortcode' => env('MPESA_SHORTCODE', 'YOUR_SHORTCODE'), // Paybill or Till number
-            'environment' => env('MPESA_ENVIRONMENT', 'sandbox'), // sandbox or production
-            'callback_url' => env('MPESA_CALLBACK_URL', route('mpesa.callback')),
-        ];
-    }
-
-    /**
-     * Generate Access Token
-     */
-    private function getAccessToken()
-    {
-        $config = $this->getMpesaConfig();
-        $baseUrl = $config['environment'] === 'sandbox' 
-            ? 'https://sandbox.safaricom.co.ke' 
-            : 'https://api.safaricom.co.ke';
-
-        $url = $baseUrl . '/oauth/v1/generate?grant_type=client_credentials';
-        
-        $response = Http::withBasicAuth($config['consumer_key'], $config['consumer_secret'])
-            ->get($url);
-
-        if ($response->successful()) {
-            return $response->json()['access_token'];
-        }
-
-        Log::error('M-Pesa Access Token Error', ['response' => $response->json()]);
-        throw new \Exception('Failed to get M-Pesa access token');
+        $this->mpesaService = $mpesaService;
     }
 
     /**
@@ -62,72 +31,42 @@ class MpesaController extends Controller
         ]);
 
         try {
-            $config = $this->getMpesaConfig();
-            $accessToken = $this->getAccessToken();
-            
-            $baseUrl = $config['environment'] === 'sandbox' 
-                ? 'https://sandbox.safaricom.co.ke' 
-                : 'https://api.safaricom.co.ke';
-
-            $url = $baseUrl . '/mpesa/stkpush/v1/processrequest';
-
-            // Format phone number (254XXXXXXXXX)
-            $phone = $this->formatPhoneNumber($validated['phone_number']);
-
-            // Generate timestamp
-            $timestamp = date('YmdHis');
-
-            // Generate password
-            $password = base64_encode($config['shortcode'] . $config['passkey'] . $timestamp);
-
-            $payload = [
-                'BusinessShortCode' => $config['shortcode'],
-                'Password' => $password,
-                'Timestamp' => $timestamp,
-                'TransactionType' => 'CustomerPayBillOnline',
-                'Amount' => (int) $validated['amount'],
-                'PartyA' => $phone,
-                'PartyB' => $config['shortcode'],
-                'PhoneNumber' => $phone,
-                'CallBackURL' => $config['callback_url'],
-                'AccountReference' => $validated['account_reference'],
-                'TransactionDesc' => $validated['transaction_desc'] ?? 'Payment for order',
-            ];
-
-            $response = Http::withToken($accessToken)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                ])
-                ->post($url, $payload);
-
-            $responseData = $response->json();
-
-            if ($response->successful() && isset($responseData['ResponseCode']) && $responseData['ResponseCode'] == 0) {
-                // Save transaction request
-                if ($request->filled('sale_id')) {
-                    Payment::create([
-                        'sale_id' => $validated['sale_id'],
-                        'payment_method' => 'M-Pesa',
-                        'amount' => $validated['amount'],
-                        'transaction_reference' => $responseData['CheckoutRequestID'],
-                        'payment_date' => now(),
-                    ]);
-                }
-
+            // Validate M-Pesa configuration
+            $validation = $this->mpesaService->validateConfig();
+            if (!$validation['valid']) {
                 return response()->json([
-                    'success' => true,
-                    'message' => 'STK Push initiated successfully',
-                    'checkout_request_id' => $responseData['CheckoutRequestID'],
-                    'customer_message' => $responseData['CustomerMessage'],
-                    'data' => $responseData,
+                    'success' => false,
+                    'message' => 'M-Pesa configuration incomplete',
+                    'error' => 'Please configure the following in your .env file: ' . implode(', ', $validation['errors']),
+                ], 400);
+            }
+
+            // Initiate STK Push using service
+            $result = $this->mpesaService->initiateStkPush(
+                $validated['phone_number'],
+                $validated['amount'],
+                $validated['account_reference'],
+                $validated['transaction_desc'] ?? null
+            );
+
+            // Save transaction request
+            if ($request->filled('sale_id')) {
+                Payment::create([
+                    'sale_id' => $validated['sale_id'],
+                    'payment_method' => 'M-Pesa',
+                    'amount' => $validated['amount'],
+                    'transaction_reference' => $result['checkout_request_id'],
+                    'payment_date' => now(),
                 ]);
             }
 
             return response()->json([
-                'success' => false,
-                'message' => $responseData['errorMessage'] ?? 'Failed to initiate STK Push',
-                'error' => $responseData,
-            ], 400);
+                'success' => true,
+                'message' => 'STK Push initiated successfully',
+                'checkout_request_id' => $result['checkout_request_id'],
+                'customer_message' => $result['customer_message'],
+                'data' => $result,
+            ]);
 
         } catch (\Exception $e) {
             Log::error('M-Pesa STK Push Error', [
@@ -153,7 +92,7 @@ class MpesaController extends Controller
             
             Log::info('M-Pesa Callback Received', $data);
 
-            // Process callback based on M-Pesa callback structure
+            // Handle STK Push callback
             if (isset($data['Body']['stkCallback'])) {
                 $callback = $data['Body']['stkCallback'];
                 $resultCode = $callback['ResultCode'] ?? null;
@@ -205,12 +144,76 @@ class MpesaController extends Controller
                 }
             }
 
+            // Handle C2B (Customer to Business) payment callback
+            if (isset($data['TransactionType']) && ($data['TransactionType'] == 'Pay Bill' || $data['TransactionType'] == 'CustomerPayBillOnline')) {
+                $transactionType = $data['TransactionType'] ?? 'C2B';
+                $transactionId = $data['TransID'] ?? null;
+                $transTime = $data['TransTime'] ?? null;
+                $transAmount = $data['TransAmount'] ?? null;
+                $businessShortCode = $data['BusinessShortCode'] ?? null;
+                $billRefNumber = $data['BillRefNumber'] ?? null; // Account reference
+                $invoiceNumber = $data['InvoiceNumber'] ?? null;
+                $orgAccountBalance = $data['OrgAccountBalance'] ?? null;
+                $thirdPartyTransID = $data['ThirdPartyTransID'] ?? null;
+                $msisdn = $data['MSISDN'] ?? null; // Phone number
+                $firstName = $data['FirstName'] ?? null;
+                $middleName = $data['MiddleName'] ?? null;
+                $lastName = $data['LastName'] ?? null;
+
+                // Check if transaction already exists
+                $existingPayment = PendingPayment::where('transaction_reference', $transactionId)->first();
+                
+                if ($existingPayment) {
+                    Log::info('C2B Payment Already Processed', [
+                        'transaction_id' => $transactionId,
+                    ]);
+                    return response()->json(['status' => 'success', 'message' => 'Payment already processed'], 200);
+                }
+
+                // Parse transaction date
+                $transactionDate = null;
+                if ($transTime) {
+                    try {
+                        // Format: YYYYMMDDHHmmss
+                        $transactionDate = \Carbon\Carbon::createFromFormat('YmdHis', $transTime);
+                    } catch (\Exception $e) {
+                        $transactionDate = now();
+                    }
+                } else {
+                    $transactionDate = now();
+                }
+
+                // Create pending payment
+                PendingPayment::create([
+                    'transaction_reference' => $transactionId,
+                    'phone_number' => $msisdn,
+                    'amount' => $transAmount,
+                    'account_reference' => $billRefNumber,
+                    'first_name' => $firstName,
+                    'middle_name' => $middleName,
+                    'last_name' => $lastName,
+                    'transaction_type' => 'C2B',
+                    'status' => 'pending',
+                    'transaction_date' => $transactionDate,
+                    'raw_data' => $data,
+                ]);
+
+                Log::info('C2B Payment Created as Pending', [
+                    'transaction_id' => $transactionId,
+                    'amount' => $transAmount,
+                    'account_reference' => $billRefNumber,
+                ]);
+
+                return response()->json(['status' => 'success', 'message' => 'Payment received and pending allocation'], 200);
+            }
+
             return response()->json(['status' => 'received'], 200);
 
         } catch (\Exception $e) {
             Log::error('M-Pesa Callback Error', [
                 'error' => $e->getMessage(),
                 'data' => $request->all(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(['status' => 'error'], 500);
@@ -227,32 +230,9 @@ class MpesaController extends Controller
         ]);
 
         try {
-            $config = $this->getMpesaConfig();
-            $accessToken = $this->getAccessToken();
-            
-            $baseUrl = $config['environment'] === 'sandbox' 
-                ? 'https://sandbox.safaricom.co.ke' 
-                : 'https://api.safaricom.co.ke';
+            $result = $this->mpesaService->queryStkPushStatus($validated['checkout_request_id']);
 
-            $url = $baseUrl . '/mpesa/stkpushquery/v1/query';
-
-            $timestamp = date('YmdHis');
-            $password = base64_encode($config['shortcode'] . $config['passkey'] . $timestamp);
-
-            $payload = [
-                'BusinessShortCode' => $config['shortcode'],
-                'Password' => $password,
-                'Timestamp' => $timestamp,
-                'CheckoutRequestID' => $validated['checkout_request_id'],
-            ];
-
-            $response = Http::withToken($accessToken)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                ])
-                ->post($url, $payload);
-
-            return response()->json($response->json());
+            return response()->json($result);
 
         } catch (\Exception $e) {
             Log::error('M-Pesa Status Check Error', ['error' => $e->getMessage()]);
@@ -263,28 +243,5 @@ class MpesaController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    /**
-     * Format phone number to 254XXXXXXXXX format
-     */
-    private function formatPhoneNumber($phone)
-    {
-        // Remove any spaces or special characters
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-        
-        // Convert to 254 format if needed
-        if (strlen($phone) == 9) {
-            // Starts with 0, remove and add 254
-            return '254' . $phone;
-        } elseif (strlen($phone) == 10 && substr($phone, 0, 1) == '0') {
-            // Starts with 0, remove and add 254
-            return '254' . substr($phone, 1);
-        } elseif (substr($phone, 0, 4) == '+254') {
-            // Already has +254, remove +
-            return substr($phone, 1);
-        }
-        
-        return $phone;
     }
 }

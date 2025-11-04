@@ -86,15 +86,6 @@ class SettingController extends Controller
     }
 
     /**
-     * Get a single setting value
-     */
-    private function getSetting($key, $default = null)
-    {
-        $setting = DB::table('settings')->where('key', $key)->first();
-        return $setting ? $setting->value : $default;
-    }
-
-    /**
      * Set or update a setting
      */
     private function setSetting($key, $value, $type = 'string')

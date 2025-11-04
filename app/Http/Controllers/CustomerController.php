@@ -26,6 +26,21 @@ class CustomerController extends Controller
 
         $customers = $query->orderBy('name')->paginate(15);
         
+        // Return JSON if AJAX request (from POS)
+        if ($request->expectsJson() || $request->ajax()) {
+            // Get all matching customers (not paginated) for POS search
+            $allCustomers = $query->orderBy('name')->limit(50)->get();
+            return response()->json($allCustomers->map(function($customer) {
+                return [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'phone' => $customer->phone,
+                    'email' => $customer->email,
+                    'loyalty_points' => $customer->loyalty_points ?? 0,
+                ];
+            }));
+        }
+        
         return view('customers.index', compact('customers'));
     }
 
@@ -42,17 +57,65 @@ class CustomerController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'address' => 'nullable|string',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'phone' => 'nullable|string|max:20',
+                'email' => 'nullable|email|max:255',
+                'address' => 'nullable|string',
+            ]);
 
-        Customer::create($validated);
+            // Generate unique email if not provided
+            if (empty($validated['email'])) {
+                $validated['email'] = $this->generateUniqueEmail($validated['name']);
+            }
 
-        return redirect()->route('customers.index')
-            ->with('success', 'Customer created successfully.');
+            $customer = Customer::create($validated);
+
+            // Return JSON response if AJAX request (from POS)
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'customer' => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'phone' => $customer->phone,
+                        'email' => $customer->email,
+                        'loyalty_points' => $customer->loyalty_points ?? 0,
+                    ],
+                ]);
+            }
+
+            return redirect()->route('customers.index')
+                ->with('success', 'Customer created successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return JSON error response if AJAX request
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Generate unique email for customer
+     */
+    private function generateUniqueEmail($name)
+    {
+        $baseEmail = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
+        $email = $baseEmail . '@pos.local';
+        $counter = 1;
+
+        while (Customer::where('email', $email)->exists()) {
+            $email = $baseEmail . $counter . '@pos.local';
+            $counter++;
+        }
+
+        return $email;
     }
 
     /**

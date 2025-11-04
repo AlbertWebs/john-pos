@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sale_id')->constrained()->onDelete('cascade');
-            $table->enum('payment_method', ['cash', 'mpesa'])->default('cash');
+            $table->enum('payment_method', ['Cash', 'M-Pesa'])->default('Cash');
             $table->decimal('amount', 10, 2);
             $table->string('transaction_reference')->nullable(); // M-Pesa transaction code
             $table->dateTime('payment_date');

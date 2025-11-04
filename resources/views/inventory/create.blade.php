@@ -153,43 +153,34 @@
                         @enderror
                     </div>
 
-                    <!-- Vehicle Make -->
+                    <!-- Vehicle Models (Multiple Selection) -->
                     <div>
-                        <label for="vehicle_make_id" class="block text-sm font-medium text-gray-700 mb-2">Vehicle Make</label>
+                        <label for="vehicle_model_ids" class="block text-sm font-medium text-gray-700 mb-2">
+                            Vehicle Models <span class="text-gray-500 text-xs">(Select multiple if item fits multiple cars)</span>
+                        </label>
                         <select 
-                            name="vehicle_make_id" 
-                            id="vehicle_make_id"
-                            x-model="vehicleMakeId"
-                            @change="loadVehicleModels()"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('vehicle_make_id') border-red-500 @enderror"
+                            name="vehicle_model_ids[]" 
+                            id="vehicle_model_ids"
+                            multiple
+                            size="8"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('vehicle_model_ids') border-red-500 @enderror"
+                            style="min-height: 200px;"
                         >
-                            <option value="">Select Vehicle Make</option>
-                            @foreach($vehicleMakes as $make)
-                                <option value="{{ $make->id }}" {{ old('vehicle_make_id') == $make->id ? 'selected' : '' }}>
-                                    {{ $make->make_name }}
-                                </option>
+                            @foreach($allVehicleModels->groupBy('vehicle_make_id') as $makeId => $models)
+                                @php
+                                    $make = $models->first()->vehicleMake;
+                                @endphp
+                                <optgroup label="{{ $make->make_name }}">
+                                    @foreach($models as $model)
+                                        <option value="{{ $model->id }}" {{ in_array($model->id, old('vehicle_model_ids', [])) ? 'selected' : '' }}>
+                                            {{ $model->model_name }}@if($model->year_start && $model->year_end) ({{ $model->year_start }}-{{ $model->year_end }})@endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
                             @endforeach
                         </select>
-                        @error('vehicle_make_id')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Vehicle Model -->
-                    <div>
-                        <label for="vehicle_model_id" class="block text-sm font-medium text-gray-700 mb-2">Vehicle Model</label>
-                        <select 
-                            name="vehicle_model_id" 
-                            id="vehicle_model_id"
-                            :disabled="!vehicleMakeId"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed @error('vehicle_model_id') border-red-500 @enderror"
-                        >
-                            <option value="">Select Vehicle Model</option>
-                            <template x-for="model in vehicleModels" :key="model.id">
-                                <option :value="model.id" x-text="model.model_name + (model.year_start && model.year_end ? ' (' + model.year_start + '-' + model.year_end + ')' : '')"></option>
-                            </template>
-                        </select>
-                        @error('vehicle_model_id')
+                        <p class="mt-1 text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple models</p>
+                        @error('vehicle_model_ids')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -376,32 +367,8 @@
 <script>
 function inventoryForm() {
     return {
-        vehicleMakeId: '{{ old('vehicle_make_id') }}',
-        vehicleModels: [],
         minPrice: {{ old('min_price', 0) }},
         sellingPrice: {{ old('selling_price', 0) }},
-        
-        loadVehicleModels() {
-            if (!this.vehicleMakeId) {
-                this.vehicleModels = [];
-                return;
-            }
-            
-            fetch(`{{ route('inventory.getVehicleModels') }}?make_id=${this.vehicleMakeId}`)
-                .then(response => response.json())
-                .then(data => {
-                    this.vehicleModels = data;
-                })
-                .catch(error => {
-                    console.error('Error loading vehicle models:', error);
-                });
-        },
-        
-        init() {
-            if (this.vehicleMakeId) {
-                this.loadVehicleModels();
-            }
-        }
     }
 }
 </script>

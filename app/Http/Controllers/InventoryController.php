@@ -76,8 +76,14 @@ class InventoryController extends Controller
         $categories = Category::orderBy('name')->get();
         $brands = Brand::orderBy('brand_name')->get();
         $vehicleMakes = VehicleMake::orderBy('make_name')->get();
+        
+        // Load all vehicle models grouped by make for multi-select
+        $allVehicleModels = VehicleModel::with('vehicleMake')
+            ->orderBy('vehicle_make_id')
+            ->orderBy('model_name')
+            ->get();
 
-        return view('inventory.create', compact('categories', 'brands', 'vehicleMakes'));
+        return view('inventory.create', compact('categories', 'brands', 'vehicleMakes', 'allVehicleModels'));
     }
 
     /**
@@ -95,6 +101,8 @@ class InventoryController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'vehicle_make_id' => 'nullable|exists:vehicle_makes,id',
             'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
+            'vehicle_model_ids' => 'nullable|array',
+            'vehicle_model_ids.*' => 'exists:vehicle_models,id',
             'year_range' => 'nullable|string|max:255',
             'cost_price' => 'required|numeric|min:0',
             'min_price' => 'required|numeric|min:0|lte:selling_price',
@@ -105,7 +113,15 @@ class InventoryController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
+        $vehicleModelIds = $validated['vehicle_model_ids'] ?? [];
+        unset($validated['vehicle_model_ids']);
+
         $inventory = Inventory::create($validated);
+        
+        // Sync vehicle models (many-to-many)
+        if (!empty($vehicleModelIds)) {
+            $inventory->vehicleModels()->sync($vehicleModelIds);
+        }
 
         return redirect()->route('inventory.index')
             ->with('success', 'Inventory item created successfully.');
@@ -129,11 +145,18 @@ class InventoryController extends Controller
         $categories = Category::orderBy('name')->get();
         $brands = Brand::orderBy('brand_name')->get();
         $vehicleMakes = VehicleMake::orderBy('make_name')->get();
-        $vehicleModels = VehicleModel::where('vehicle_make_id', $inventory->vehicle_make_id)
+        
+        // Load all vehicle models grouped by make for multi-select
+        $allVehicleModels = VehicleModel::with('vehicleMake')
+            ->orderBy('vehicle_make_id')
             ->orderBy('model_name')
             ->get();
+        
+        // Get currently selected vehicle models
+        $inventory->load('vehicleModels');
+        $selectedVehicleModelIds = $inventory->vehicleModels->pluck('id')->toArray();
 
-        return view('inventory.edit', compact('inventory', 'categories', 'brands', 'vehicleMakes', 'vehicleModels'));
+        return view('inventory.edit', compact('inventory', 'categories', 'brands', 'vehicleMakes', 'allVehicleModels', 'selectedVehicleModelIds'));
     }
 
     /**
@@ -151,6 +174,8 @@ class InventoryController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'vehicle_make_id' => 'nullable|exists:vehicle_makes,id',
             'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
+            'vehicle_model_ids' => 'nullable|array',
+            'vehicle_model_ids.*' => 'exists:vehicle_models,id',
             'year_range' => 'nullable|string|max:255',
             'cost_price' => 'required|numeric|min:0',
             'min_price' => 'required|numeric|min:0|lte:selling_price',
@@ -160,6 +185,9 @@ class InventoryController extends Controller
             'location' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive',
         ]);
+
+        $vehicleModelIds = $validated['vehicle_model_ids'] ?? [];
+        unset($validated['vehicle_model_ids']);
 
         // Track price changes
         if ($request->selling_price != $inventory->selling_price) {
@@ -173,6 +201,9 @@ class InventoryController extends Controller
         }
 
         $inventory->update($validated);
+        
+        // Sync vehicle models (many-to-many)
+        $inventory->vehicleModels()->sync($vehicleModelIds);
 
         return redirect()->route('inventory.index')
             ->with('success', 'Inventory item updated successfully.');

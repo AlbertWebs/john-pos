@@ -64,6 +64,13 @@ class Inventory extends Model
         return $this->belongsTo(VehicleModel::class);
     }
 
+    // Many-to-many relationship for multiple vehicle models
+    public function vehicleModels()
+    {
+        return $this->belongsToMany(VehicleModel::class, 'inventory_vehicle_model')
+            ->withTimestamps();
+    }
+
     public function saleItems()
     {
         return $this->hasMany(SaleItem::class, 'part_id');

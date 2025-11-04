@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('discount', 10, 2)->default(0);
             $table->decimal('total_amount', 10, 2);
-            $table->enum('payment_status', ['pending', 'paid', 'partial'])->default('pending');
+            $table->enum('payment_status', ['pending', 'paid', 'partial', 'completed'])->default('pending');
             $table->timestamps();
             
             $table->index('invoice_number');
