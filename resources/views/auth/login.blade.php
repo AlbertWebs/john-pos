@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - Spare Parts POS</title>
+    <title>Login - {{ $companyName ?? config('app.name', 'Spare Parts POS') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -14,7 +14,7 @@
         <div class="bg-white rounded-2xl shadow-2xl p-8">
             <!-- Logo/Header -->
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Spare Parts POS</h1>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $companyName ?? config('app.name', 'Spare Parts POS') }}</h1>
                 <p class="text-gray-600">Enter your PIN to continue</p>
             </div>
 
@@ -91,11 +91,13 @@
                     </button>
                 </div>
 
+                <!-- Login button hidden - form auto-submits when PIN is complete -->
                 <button
                     type="submit"
                     :disabled="pin.length !== 4 || !username"
                     @click="ensureFormValues()"
-                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="hidden"
+                    style="display: none;"
                 >
                     Login
                 </button>
