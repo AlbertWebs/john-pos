@@ -10,22 +10,59 @@ class CustomerSeeder extends Seeder
 {
     public function run(): void
     {
-        $firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily', 'James', 'Mary', 'Robert', 'Patricia', 'William', 'Jennifer', 'Richard', 'Linda', 'Joseph', 'Elizabeth', 'Thomas', 'Barbara', 'Christopher', 'Susan', 'Daniel', 'Jessica', 'Matthew', 'Karen', 'Anthony', 'Nancy', 'Mark', 'Betty', 'Donald', 'Margaret'];
+        // Kenyan first names (common in Kenya)
+        $firstNames = ['James', 'John', 'Peter', 'Joseph', 'David', 'Michael', 'Paul', 'Simon', 'Daniel', 'Stephen', 
+                      'Mary', 'Grace', 'Faith', 'Sarah', 'Joyce', 'Ruth', 'Esther', 'Mercy', 'Jane', 'Ann', 
+                      'Catherine', 'Lucy', 'Rose', 'Hannah', 'Patience', 'Elizabeth', 'Susan', 'Naomi', 'Rebecca', 'Margaret'];
         
-        $lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker', 'Young'];
+        // Kenyan last names (common in Kenya) - unique names from various Kenyan tribes
+        $lastNames = [
+            // Kikuyu names
+            'Mwangi', 'Kariuki', 'Kamau', 'Njoroge', 'Maina', 'Wanjiru', 'Wanjala', 'Wanjiku', 'Wambui', 'Waweru',
+            // Luo names
+            'Ochieng', 'Onyango', 'Omondi', 'Owuor', 'Otieno', 'Okoth', 'Opiyo', 'Onyango', 'Ochieng', 'Omondi',
+            // Luhya names
+            'Wanyama', 'Wanyonyi', 'Wanjala', 'Wanyonyi', 'Wanjala', 'Wanyonyi', 'Wanjala', 'Wanyonyi', 'Wanjala', 'Wanyonyi',
+            // Kalenjin names
+            'Kipchoge', 'Chebet', 'Kiprotich', 'Cheruiyot', 'Kipchoge', 'Chebet', 'Kiprotich', 'Cheruiyot', 'Kipchoge', 'Chebet',
+            // Kamba names
+            'Muthoka', 'Mutua', 'Muthoka', 'Mutua', 'Muthoka', 'Mutua', 'Muthoka', 'Mutua', 'Muthoka', 'Mutua',
+            // Meru names
+            'Mwirigi', 'Muthomi', 'Mwirigi', 'Muthomi', 'Mwirigi', 'Muthomi', 'Mwirigi', 'Muthomi', 'Mwirigi', 'Muthomi',
+        ];
+
+        // Kenyan cities and areas
+        $areas = [
+            'Nairobi' => ['Westlands', 'Parklands', 'Kilimani', 'Lavington', 'Karen', 'Kasarani', 'Eastleigh', 'Kibera', 'Kawangware', 'Mathare'],
+            'Mombasa' => ['Nyali', 'Bamburi', 'Mtwapa', 'Likoni', 'Kisauni', 'Mikindani', 'Changamwe', 'Mombasa CBD'],
+            'Kisumu' => ['Milimani', 'Nyalenda', 'Manyatta', 'Kondele', 'Kisumu CBD'],
+            'Nakuru' => ['Milimani', 'Lanet', 'Shabab', 'Nakuru CBD'],
+            'Eldoret' => ['Milimani', 'Kapsoya', 'Kipkaren', 'Eldoret CBD'],
+            'Thika' => ['Makongeni', 'Thika CBD', 'Gatuanyaga'],
+            'Machakos' => ['Machakos CBD', 'Katoloni', 'Mavoko'],
+        ];
 
         for ($i = 0; $i < 35; $i++) {
             $firstName = $firstNames[array_rand($firstNames)];
             $lastName = $lastNames[array_rand($lastNames)];
             $name = $firstName . ' ' . $lastName;
-            $phone = '2547' . str_pad(rand(10000000, 99999999), 8, '0', STR_PAD_LEFT);
-            $email = strtolower($firstName . '.' . $lastName . '@example.com');
+            
+            // Generate Kenyan phone number (254XXXXXXXXX) - Kenyan mobile numbers start with 7
+            $phone = '2547' . rand(10000000, 99999999);
+            
+            $email = strtolower($firstName . '.' . $lastName . '@gmail.com');
+
+            // Get random city and area
+            $city = array_rand($areas);
+            $area = $areas[$city][array_rand($areas[$city])];
+            $street = rand(1, 500);
+            $address = $street . ' ' . $area . ', ' . $city . ', Kenya';
 
             Customer::create([
                 'name' => $name,
                 'phone' => $phone,
                 'email' => $email,
-                'address' => rand(100, 9999) . ' Main Street, Nairobi, Kenya',
+                'address' => $address,
                 'loyalty_points' => rand(0, 5000),
             ]);
         }

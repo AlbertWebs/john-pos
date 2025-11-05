@@ -139,6 +139,31 @@
                 </div>
             </div>
 
+            <!-- Email Notifications -->
+            <div class="mb-8 pt-6 border-t">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Email Notifications</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="admin_email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Admin Email <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="email" 
+                            name="admin_email" 
+                            id="admin_email"
+                            value="{{ old('admin_email', $settings['admin_email'] ?? '') }}"
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('admin_email') border-red-500 @enderror"
+                            placeholder="admin@example.com"
+                        >
+                        <p class="mt-1 text-xs text-gray-500">Receives daily sales reports, hourly stock status, and low stock alerts</p>
+                        @error('admin_email')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
             <!-- General Settings -->
             <div class="mb-8 pt-6 border-t">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">General Settings</h2>

@@ -93,7 +93,6 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'part_number' => 'required|string|unique:inventory,part_number|max:255',
-            'sku' => 'nullable|string|max:255',
             'barcode' => 'nullable|string|unique:inventory,barcode|max:255',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -115,6 +114,11 @@ class InventoryController extends Controller
 
         $vehicleModelIds = $validated['vehicle_model_ids'] ?? [];
         unset($validated['vehicle_model_ids']);
+
+        // Auto-generate SKU if not provided
+        if (empty($validated['sku'])) {
+            $validated['sku'] = $this->generateSKU($validated);
+        }
 
         $inventory = Inventory::create($validated);
         
@@ -166,7 +170,6 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'part_number' => 'required|string|max:255|unique:inventory,part_number,' . $inventory->id,
-            'sku' => 'nullable|string|max:255',
             'barcode' => 'nullable|string|max:255|unique:inventory,barcode,' . $inventory->id,
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -188,6 +191,11 @@ class InventoryController extends Controller
 
         $vehicleModelIds = $validated['vehicle_model_ids'] ?? [];
         unset($validated['vehicle_model_ids']);
+
+        // Auto-generate SKU if not provided or if it's empty
+        if (empty($validated['sku']) || !isset($validated['sku'])) {
+            $validated['sku'] = $this->generateSKU($validated);
+        }
 
         // Track price changes
         if ($request->selling_price != $inventory->selling_price) {
@@ -271,6 +279,40 @@ class InventoryController extends Controller
                 'message' => 'Failed to delete items: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Generate a unique SKU based on item details
+     */
+    private function generateSKU(array $data): string
+    {
+        // Generate SKU: Category prefix + Part Number + Timestamp suffix
+        $categoryPrefix = '';
+        if (!empty($data['category_id'])) {
+            $category = Category::find($data['category_id']);
+            if ($category) {
+                $categoryPrefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $category->name), 0, 3));
+            }
+        }
+        
+        // Use part number as base (remove special chars, uppercase)
+        $partNumberBase = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $data['part_number'] ?? ''));
+        
+        // Add timestamp suffix to ensure uniqueness
+        $timestamp = now()->format('Ymd');
+        
+        // Combine: CAT-PART-TIMESTAMP
+        $sku = ($categoryPrefix ? $categoryPrefix . '-' : '') . ($partNumberBase ?: 'ITEM') . '-' . $timestamp;
+        
+        // Ensure uniqueness by checking database
+        $counter = 1;
+        $originalSku = $sku;
+        while (Inventory::where('sku', $sku)->exists()) {
+            $sku = $originalSku . '-' . $counter;
+            $counter++;
+        }
+        
+        return $sku;
     }
 
     /**

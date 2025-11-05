@@ -12,15 +12,8 @@ class RedirectIfAuthenticated
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::check()) {
-            $user = Auth::user();
-            
-            if ($user->isSuperAdmin()) {
-                return redirect()->route('dashboard');
-            } else if ($user->isCashier()) {
-                return redirect()->route('pos.index');
-            }
-            
-            return redirect()->route('dashboard');
+            // Redirect all authenticated users to POS
+            return redirect()->route('pos.index');
         }
 
         return $next($request);

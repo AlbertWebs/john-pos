@@ -17,6 +17,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'login']);
 });
 
+// M-Pesa Callback (must be public - no auth required)
+Route::post('/mpesa/callback', [\App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.callback');
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
     
@@ -60,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales', [\App\Http\Controllers\SaleController::class, 'index'])->name('sales.index');
     Route::post('/sales', [\App\Http\Controllers\SaleController::class, 'store'])->name('sales.store');
     Route::get('/sales/{sale}', [\App\Http\Controllers\SaleController::class, 'show'])->name('sales.show');
+    Route::get('/sales/{sale}/print', [\App\Http\Controllers\SaleController::class, 'print'])->name('sales.print');
     
     // Reports
     Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
@@ -84,10 +88,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
     Route::put('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
     
-    // M-Pesa
+    // Admin Pages (only for super_admin)
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/sales-reports', [\App\Http\Controllers\Admin\SalesReportLogController::class, 'index'])->name('sales-reports.index');
+        Route::get('/stock-status', [\App\Http\Controllers\Admin\StockStatusController::class, 'index'])->name('stock-status.index');
+    });
+    
+    // M-Pesa (STK Push and status check require authentication)
     Route::post('/mpesa/stk-push', [\App\Http\Controllers\MpesaController::class, 'stkPush'])->name('mpesa.stkPush');
-    Route::post('/mpesa/callback', [\App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.callback');
     Route::post('/mpesa/check-status', [\App\Http\Controllers\MpesaController::class, 'checkStatus'])->name('mpesa.checkStatus');
+    
+    // M-Pesa Testing (Simulate C2B transactions)
+    Route::post('/mpesa/simulate-c2b', [\App\Http\Controllers\MpesaController::class, 'simulateC2B'])->name('mpesa.simulateC2B');
     
     // Pending Payments (C2B)
     Route::get('/pending-payments', [\App\Http\Controllers\PendingPaymentController::class, 'index'])->name('pending-payments.index');
@@ -97,9 +109,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/pending-payments/{pendingPayment}/cancel', [\App\Http\Controllers\PendingPaymentController::class, 'cancel'])->name('pending-payments.cancel');
     Route::get('/pending-payments/{pendingPayment}', [\App\Http\Controllers\PendingPaymentController::class, 'show'])->name('pending-payments.show');
     
-    // Redirect root to dashboard for authenticated users
+    // Redirect root to POS for authenticated users
     Route::get('/', function () {
-        return redirect()->route('dashboard');
+        return redirect()->route('pos.index');
     });
 });
 

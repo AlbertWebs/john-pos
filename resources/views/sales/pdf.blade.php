@@ -11,43 +11,51 @@
             box-sizing: border-box;
         }
         body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 9px;
+            line-height: 1.2;
+            color: #000;
+            margin: 0;
+            padding: 0;
         }
         .receipt {
-            max-width: 800px;
+            max-width: 72mm;
+            width: 72mm;
             margin: 0 auto;
-            padding: 30px;
+            padding: 3mm;
             background: #fff;
+            font-family: 'Courier New', Courier, monospace;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
         }
         .header h1 {
-            font-size: 24px;
+            font-size: 12px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
+            line-height: 1.1;
         }
         .header p {
-            font-size: 14px;
-            color: #666;
+            font-size: 9px;
+            color: #000;
+            margin: 1px 0;
         }
         .details {
             display: table;
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+            border-bottom: 1px dashed #000;
         }
         .details-row {
             display: table-row;
         }
         .details-cell {
             display: table-cell;
-            padding: 8px 0;
+            padding: 2px 0;
             width: 50%;
         }
         .details-cell.right {
@@ -55,67 +63,85 @@
         }
         .label {
             font-weight: bold;
-            color: #666;
-            font-size: 10px;
+            color: #000;
+            font-size: 7px;
             text-transform: uppercase;
         }
         .value {
-            font-size: 14px;
-            margin-top: 3px;
+            font-size: 8px;
+            margin-top: 1px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
+            margin-bottom: 4px;
+            font-size: 8px;
         }
         thead {
-            background-color: #f5f5f5;
+            background-color: #fff;
         }
         th {
             text-align: left;
-            padding: 10px;
-            font-size: 11px;
+            padding: 1px;
+            font-size: 7px;
             font-weight: bold;
             text-transform: uppercase;
-            border-bottom: 2px solid #333;
+            border-bottom: 1px solid #000;
         }
         th.right {
             text-align: right;
         }
         td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
+            padding: 1px;
+            border-bottom: 1px dotted #000;
+            font-size: 8px;
+            line-height: 1.1;
+            vertical-align: top;
         }
         td.right {
             text-align: right;
+            vertical-align: middle;
         }
         .totals {
-            margin-top: 20px;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px dashed #000;
         }
         .total-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #ddd;
+            padding: 2px 0;
+            border-bottom: 1px dotted #000;
+            font-size: 8px;
         }
         .total-row.final {
-            border-bottom: 2px solid #333;
+            border-bottom: 1px solid #000;
             font-weight: bold;
-            font-size: 16px;
-            margin-top: 10px;
+            font-size: 10px;
+            margin-top: 2px;
+            padding-top: 2px;
         }
         .payment-info {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px dashed #000;
+        }
+        .payment-info .label {
+            margin-bottom: 4px;
+        }
+        .payment-info .total-row {
+            font-size: 8px;
         }
         .footer {
-            margin-top: 40px;
+            margin-top: 4px;
             text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 10px;
-            color: #666;
+            padding-top: 4px;
+            border-top: 1px dashed #000;
+            font-size: 8px;
+            color: #000;
+        }
+        .footer p {
+            margin: 2px 0;
         }
     </style>
 </head>
@@ -124,17 +150,16 @@
         <!-- Header -->
         <div class="header">
             @if(isset($settings['logo']) && $settings['logo'])
-            <div style="margin-bottom: 15px;">
-                <img src="{{ public_path('storage/' . $settings['logo']) }}" alt="Logo" style="max-height: 60px;">
+            <div style="margin-bottom: 4px;">
+                <img src="{{ public_path('storage/' . $settings['logo']) }}" alt="Logo" style="max-height: 30px; max-width: 100%;">
             </div>
             @endif
             <h1>{{ $settings['company_name'] ?? config('app.name', 'Spare Parts POS') }}</h1>
             <p>Sale Receipt</p>
-            @if(isset($settings['address']) || isset($settings['phone']) || isset($settings['email']))
-            <div style="margin-top: 10px; font-size: 10px; color: #666;">
-                @if(isset($settings['address']))<p>{{ $settings['address'] }}</p>@endif
-                @if(isset($settings['phone']))<p>Phone: {{ $settings['phone'] }}</p>@endif
-                @if(isset($settings['email']))<p>Email: {{ $settings['email'] }}</p>@endif
+            @if(isset($settings['address']) || isset($settings['phone']))
+            <div style="margin-top: 2px; font-size: 8px; color: #000;">
+                @if(isset($settings['address']))<p style="margin: 1px 0;">{{ strlen($settings['address']) > 35 ? substr($settings['address'], 0, 32) . '...' : $settings['address'] }}</p>@endif
+                @if(isset($settings['phone']))<p style="margin: 1px 0;">Tel: {{ $settings['phone'] }}</p>@endif
             </div>
             @endif
         </div>
@@ -148,7 +173,7 @@
                 </div>
                 <div class="details-cell right">
                     <div class="label">Date</div>
-                    <div class="value">{{ $sale->date->format('M d, Y h:i A') }}</div>
+                    <div class="value">{{ $sale->date->format('d/m/Y H:i') }}</div>
                 </div>
             </div>
             @if($sale->customer)
@@ -176,22 +201,22 @@
         <table>
             <thead>
                 <tr>
-                    <th>Item</th>
-                    <th class="right">Qty</th>
-                    <th class="right">Price</th>
-                    <th class="right">Subtotal</th>
+                    <th style="width: 28mm;">Item</th>
+                    <th class="right" style="width: 8mm;">Qty</th>
+                    <th class="right" style="width: 18mm;">Price</th>
+                    <th class="right" style="width: 18mm;">Total</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($sale->saleItems as $item)
                 <tr>
-                    <td>
-                        <strong>{{ $item->part->name }}</strong><br>
-                        <small>{{ $item->part->part_number }}</small>
+                    <td style="max-width: 28mm; font-size: 8px; line-height: 1.1;">
+                        {{ strlen($item->part->name) > 20 ? substr($item->part->name, 0, 17) . '...' : $item->part->name }}<br>
+                        <span style="font-size: 7px;">{{ $item->part->part_number }}</span>
                     </td>
-                    <td class="right">{{ $item->quantity }}</td>
-                    <td class="right">KES {{ number_format($item->price, 2) }}</td>
-                    <td class="right">KES {{ number_format($item->subtotal, 2) }}</td>
+                    <td class="right" style="width: 8mm; font-size: 8px;">{{ $item->quantity }}</td>
+                    <td class="right" style="width: 18mm; font-size: 8px;">KES {{ number_format($item->price, 2) }}</td>
+                    <td class="right" style="width: 18mm; font-size: 8px; font-weight: bold;">KES {{ number_format($item->subtotal, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -223,16 +248,16 @@
 
         <!-- Payment Information -->
         @if($sale->payments->count() > 0)
-        <div class="payment-info">
-            <div class="label" style="margin-bottom: 10px;">Payment Details:</div>
+            <div class="payment-info">
+            <div class="label" style="margin-bottom: 4px;">Payment:</div>
             @foreach($sale->payments as $payment)
             <div class="total-row">
                 <span>{{ $payment->payment_method }}:</span>
                 <span>KES {{ number_format($payment->amount, 2) }}</span>
             </div>
             @if($payment->transaction_reference)
-            <div style="font-size: 10px; color: #666; margin-top: 5px;">
-                Reference: {{ $payment->transaction_reference }}
+            <div style="font-size: 7px; color: #000; margin-top: 1px;">
+                Ref: {{ strlen($payment->transaction_reference) > 20 ? substr($payment->transaction_reference, 0, 17) . '...' : $payment->transaction_reference }}
             </div>
             @endif
             @endforeach

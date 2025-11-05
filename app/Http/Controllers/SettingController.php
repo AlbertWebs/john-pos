@@ -29,6 +29,7 @@ class SettingController extends Controller
             'company_name' => 'nullable|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'email' => 'nullable|email|max:255',
+            'admin_email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'paybill_number' => 'nullable|string|max:20',

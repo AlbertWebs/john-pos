@@ -3,46 +3,124 @@
 @section('title', 'Point of Sale')
 
 @section('content')
-<div class="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50" x-data="posInterface()">
-    <!-- Header -->
-    <div class="bg-blue-900 shadow-lg px-6 py-4">
-        <div class="flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-white/20 p-2 rounded-lg">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-white">Point of Sale</h1>
-                    <p class="text-sm text-blue-100">{{ Auth::user()->name }} • {{ now()->format('M d, Y h:i A') }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
+<style>
+    /* Zoom out POS page to fit everything on screen */
+    @media screen {
+        .pos-container {
+            zoom: 0.95;
+            transform-origin: top left;
+        }
+        
+        /* For browsers that don't support zoom, use transform scale */
+        @supports not (zoom: 1) {
+            .pos-container {
+                zoom: 1;
+                transform: scale(0.95);
+                transform-origin: top left;
+                width: 117.65%; /* 100 / 0.85 */
+                height: 117.65%; /* 100 / 0.85 */
+            }
+        }
+        
+        /* Adjust for smaller screens */
+        @media (max-width: 1920px) {
+            .pos-container {
+                zoom: 0.8;
+            }
+            @supports not (zoom: 1) {
+                .pos-container {
+                    transform: scale(0.8);
+                    width: 125%; /* 100 / 0.8 */
+                    height: 125%; /* 100 / 0.8 */
+                }
+            }
+        }
+        
+        @media (max-width: 1680px) {
+            .pos-container {
+                zoom: 0.75;
+            }
+            @supports not (zoom: 1) {
+                .pos-container {
+                    transform: scale(0.75);
+                    width: 133.33%; /* 100 / 0.75 */
+                    height: 133.33%; /* 100 / 0.75 */
+                }
+            }
+        }
+        
+        @media (max-width: 1440px) {
+            .pos-container {
+                zoom: 0.8;
+            }
+            @supports not (zoom: 1) {
+                .pos-container {
+                    transform: scale(0.7);
+                    width: 142.86%; /* 100 / 0.7 */
+                    height: 142.86%; /* 100 / 0.7 */
+                }
+            }
+        }
+    }
+</style>
+<div class="pos-container h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50" x-data="posInterface()">
+   
 
     <div class="flex-1 flex overflow-hidden">
         <!-- Left Panel - Product Search & Selection -->
         <div class="w-2/3 bg-white border-r border-gray-200 flex flex-col">
-            <!-- Search Bar -->
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-4 shadow-sm">
-                <div class="relative">
-                    <input 
-                        type="text" 
-                        x-model="searchQuery"
-                        @input.debounce.300ms="searchProducts()"
-                        placeholder="Search by name, part number, SKU..."
-                        class="w-full px-4 py-3 pl-12 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition"
-                    >
-                    <svg class="absolute left-4 top-4 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
+            <!-- Barcode Scanner & Search Bar - Side by Side -->
+            <div class="bg-gradient-to-r from-green-50 via-blue-50 to-indigo-50 border-b border-gray-200 p-4 shadow-sm">
+                <div class="flex gap-4">
+                    <!-- Barcode Scanner -->
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">
+                            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                            </svg>
+                            Scan Barcode
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                x-ref="barcodeInput"
+                                x-model="barcodeQuery"
+                                @keydown="handleBarcodeInput($event)"
+                                @input="handleBarcodeChange()"
+                                placeholder="Scan barcode..."
+                                class="w-full px-4 py-2.5 pl-10 border-2 border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-sm transition font-mono text-sm"
+                                autocomplete="off"
+                                autofocus
+                            >
+                          
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">
+                            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Search by Name
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                x-model="searchQuery"
+                                @input.debounce.300ms="searchProducts()"
+                                placeholder="Search by name, part number, SKU..."
+                                class="w-full px-4 py-2.5 pl-10 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition text-sm"
+                            >
+                           
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Search Results -->
             <div class="flex-1 overflow-y-auto p-4">
-                <div class="grid grid-cols-2 gap-4" x-show="!loading && products.length > 0">
+                <div class="grid grid-cols-2 xl:grid-cols-4 gap-4" x-show="!loading && products.length > 0">
                     <template x-for="product in products" :key="product.id">
                         <div 
                             @click="addToCart(product)"
@@ -69,6 +147,55 @@
                                     :class="product.stock_quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                     x-text="product.stock_quantity > 0 ? '✓ ' + product.stock_quantity + ' in stock' : 'Out of stock'"
                                 ></span>
+                            </div>
+                            
+                            <!-- Vehicle Compatibility Tooltip -->
+                            <div class="mt-2 relative group" x-show="product.vehicle_make || product.vehicle_model || (product.vehicle_models && product.vehicle_models.length > 0)">
+                                <button 
+                                    type="button"
+                                    @click.stop="toggleCompatibility(product)"
+                                    class="flex items-center gap-1 text-xs text-gray-600 hover:text-blue-600 transition"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span>Vehicle Compatibility</span>
+                                </button>
+                                
+                                <!-- Compatibility Popup -->
+                                <div 
+                                    x-show="showCompatibility && compatibilityProduct && compatibilityProduct.id === product.id"
+                                    @click.away="showCompatibility = false"
+                                    x-cloak
+                                    class="absolute z-50 bottom-full left-0 mb-2 w-64 bg-white rounded-lg shadow-xl border-2 border-blue-200 p-4"
+                                >
+                                    <h4 class="font-bold text-sm text-gray-900 mb-2">Vehicle Compatibility</h4>
+                                    <div class="space-y-2 text-xs">
+                                        <div x-show="compatibilityProduct.vehicle_make">
+                                            <span class="font-semibold text-gray-700">Make:</span>
+                                            <span class="text-gray-600" x-text="compatibilityProduct.vehicle_make"></span>
+                                        </div>
+                                        <div x-show="compatibilityProduct.vehicle_model">
+                                            <span class="font-semibold text-gray-700">Model:</span>
+                                            <span class="text-gray-600" x-text="compatibilityProduct.vehicle_model"></span>
+                                        </div>
+                                        <div x-show="compatibilityProduct.year_range">
+                                            <span class="font-semibold text-gray-700">Year Range:</span>
+                                            <span class="text-gray-600" x-text="compatibilityProduct.year_range"></span>
+                                        </div>
+                                        <div x-show="compatibilityProduct.vehicle_models && compatibilityProduct.vehicle_models.length > 0">
+                                            <span class="font-semibold text-gray-700 block mb-1">Compatible Models:</span>
+                                            <ul class="list-disc list-inside space-y-1 text-gray-600">
+                                                <template x-for="model in compatibilityProduct.vehicle_models" :key="model.id">
+                                                    <li x-text="model.name + (model.year_start && model.year_end ? ' (' + model.year_start + '-' + model.year_end + ')' : '')"></li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                        <div x-show="!compatibilityProduct.vehicle_make && !compatibilityProduct.vehicle_model && (!compatibilityProduct.vehicle_models || compatibilityProduct.vehicle_models.length === 0)">
+                                            <span class="text-gray-500 italic">No specific vehicle compatibility information</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -105,6 +232,81 @@
                         <p class="text-blue-700 font-bold text-lg text-center">Start typing to search</p>
                         <p class="text-blue-600 text-sm text-center mt-2">Search by name, part number, or SKU</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- C2B Payment Allocation Section -->
+            <div class="border-t-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-bold text-blue-900">Direct Paybill Payments</label>
+                    <button 
+                        type="button"
+                        @click="loadPendingPayments()"
+                        class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        🔄 Refresh
+                    </button>
+                </div>
+                
+                <!-- Search/Filter Pending Payments -->
+                <input 
+                    type="text" 
+                    x-model="pendingPaymentSearch"
+                    @input.debounce.300ms="searchPendingPayments()"
+                    placeholder="Search by phone, reference, or amount..."
+                    class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white mb-2"
+                >
+                
+                <!-- Pending Payments List -->
+                <div class="max-h-48 overflow-y-auto space-y-2" x-show="pendingPayments.length > 0">
+                    <template x-for="payment in filteredPendingPayments" :key="payment.id">
+                        <div 
+                            @click="selectPendingPayment(payment)"
+                            class="p-2 bg-white rounded-lg border-2 cursor-pointer transition"
+                            :class="selectedPendingPayment && selectedPendingPayment.id === payment.id ? 'border-blue-500 bg-blue-50' : 'border-blue-200 hover:border-blue-400'"
+                        >
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <p class="text-xs font-bold text-gray-900" x-text="'KES ' + formatPrice(payment.amount)"></p>
+                                    <p class="text-xs text-gray-600" x-text="payment.phone_number"></p>
+                                    <p class="text-xs text-gray-500" x-text="payment.transaction_reference"></p>
+                                </div>
+                                <div class="flex-shrink-0 ml-2">
+                                    <span 
+                                        class="px-2 py-1 text-xs rounded font-semibold"
+                                        :class="Math.abs(payment.amount - cartTotal.total) <= 0.01 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
+                                        x-text="Math.abs(payment.amount - cartTotal.total) <= 0.01 ? 'Match' : 'Mismatch'"
+                                    ></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <!-- No Pending Payments -->
+                <div x-show="pendingPayments.length === 0 && !loadingPendingPayments" class="text-center py-2">
+                    <p class="text-xs text-gray-500">No pending C2B payments</p>
+                </div>
+                
+                <!-- Loading State -->
+                <div x-show="loadingPendingPayments" class="text-center py-2">
+                    <svg class="animate-spin h-4 w-4 text-blue-600 mx-auto" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                
+                <!-- Selected Payment Info -->
+                <div x-show="selectedPendingPayment" class="bg-green-50 border-2 border-green-300 rounded-lg p-2 mt-2">
+                    <p class="text-xs font-bold text-green-900 mb-1">Selected Payment:</p>
+                    <p class="text-xs text-green-700" x-text="'KES ' + formatPrice(selectedPendingPayment.amount) + ' - ' + selectedPendingPayment.transaction_reference"></p>
+                    <button 
+                        type="button"
+                        @click="selectedPendingPayment = null; transactionReference = ''"
+                        class="mt-1 text-xs text-red-600 hover:text-red-800 font-medium"
+                    >
+                        Clear Selection
+                    </button>
                 </div>
             </div>
         </div>
@@ -216,7 +418,7 @@
                                         :min="item.min_price"
                                         step="0.01"
                                         class="flex-1 px-2 py-1.5 border-2 rounded-lg text-sm font-medium"
-                                        :class="item.price < item.min_price ? 'border-red-500 bg-red-50 text-red-700' : 'border-indigo-300 focus:ring-2 focus:ring-indigo-500'"
+                                        :class="Number(item.price) < Number(item.min_price) ? 'border-red-500 bg-red-50 text-red-700' : 'border-indigo-300 focus:ring-2 focus:ring-indigo-500'"
                                         placeholder="Price"
                                     >
                                     <span class="text-xs font-semibold text-gray-600 whitespace-nowrap">KES</span>
@@ -224,7 +426,7 @@
                                 <div class="flex items-center justify-between text-xs">
                                     <span 
                                         class="text-xs font-medium"
-                                        :class="item.price < item.min_price ? 'text-red-600' : 'text-gray-600'"
+                                        :class="Number(item.price) < Number(item.min_price) ? 'text-red-600' : 'text-gray-600'"
                                         x-text="'Min: KES ' + formatPrice(item.min_price)"
                                     ></span>
                                     <span 
@@ -294,37 +496,43 @@
                         </button>
                     </div>
                     
-                    <div x-show="paymentMethod === 'M-Pesa'" class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-3 space-y-2">
-                        <input 
-                            type="tel" 
-                            x-model="mpesaPhoneNumber"
-                            :placeholder="selectedCustomer ? selectedCustomer.phone || 'Customer phone number (2547XXXXXXXX)' : 'Customer phone number (2547XXXXXXXX)'"
-                            class="w-full px-3 py-2.5 border-2 border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm font-medium bg-white"
-                        >
-                        <p class="text-xs text-yellow-700 font-medium">Use customer phone number for M-Pesa payment</p>
-                        <button 
-                            type="button"
-                            @click="initiateSTKPush()"
-                            :disabled="!mpesaPhoneNumber || cartTotal.total <= 0 || processingSTK"
-                            class="w-full py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg font-bold transition transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none text-sm flex items-center justify-center gap-2 shadow-md"
-                        >
-                            <span x-show="!processingSTK">📱 Initiate STK Push</span>
-                            <span x-show="processingSTK" class="flex items-center gap-2">
-                                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
-                            </span>
-                        </button>
-                        <input 
-                            type="text" 
-                            x-model="transactionReference"
-                            placeholder="Transaction reference (auto-filled after STK)"
-                            class="w-full px-3 py-2 border-2 border-yellow-200 rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm bg-white font-medium"
-                            readonly
-                        >
-                        <p class="text-xs text-yellow-600 font-medium">Enter phone number and click "Initiate STK Push" to prompt customer</p>
+                    <div x-show="paymentMethod === 'M-Pesa'" class="space-y-3">
+                        <!-- STK Push Section -->
+                        <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-3 space-y-2">
+                            <p class="text-xs font-bold text-yellow-900 mb-2">Or use STK Push:</p>
+                            <input 
+                                type="tel" 
+                                x-model="mpesaPhoneNumber"
+                                :disabled="!!selectedPendingPayment"
+                                :placeholder="selectedCustomer ? selectedCustomer.phone || 'Customer phone number (2547XXXXXXXX)' : 'Customer phone number (2547XXXXXXXX)'"
+                                class="w-full px-3 py-2.5 border-2 border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm font-medium bg-white"
+                                :class="selectedPendingPayment ? 'opacity-50 cursor-not-allowed' : ''"
+                            >
+                            <p class="text-xs text-yellow-700 font-medium">Use customer phone number for M-Pesa payment</p>
+                            <button 
+                                type="button"
+                                @click="initiateSTKPush()"
+                                :disabled="!mpesaPhoneNumber || cartTotal.total <= 0 || processingSTK || !!selectedPendingPayment"
+                                class="w-full py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg font-bold transition transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none text-sm flex items-center justify-center gap-2 shadow-md"
+                            >
+                                <span x-show="!processingSTK">📱 Initiate STK Push</span>
+                                <span x-show="processingSTK" class="flex items-center gap-2">
+                                    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                </span>
+                            </button>
+                            <input 
+                                type="text" 
+                                x-model="transactionReference"
+                                placeholder="Transaction reference (auto-filled after STK or C2B)"
+                                class="w-full px-3 py-2 border-2 border-yellow-200 rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm bg-white font-medium"
+                                :readonly="!!selectedPendingPayment"
+                            >
+                            <p class="text-xs text-yellow-600 font-medium" x-show="!selectedPendingPayment">Enter phone number and click "Initiate STK Push" to prompt customer</p>
+                        </div>
                     </div>
 
                     <button 
@@ -468,6 +676,7 @@
 function posInterface() {
     return {
         searchQuery: '',
+        barcodeQuery: '',
         products: [],
         loading: false,
         cart: [],
@@ -487,6 +696,17 @@ function posInterface() {
         },
         creatingCustomer: false,
         customerError: '',
+        barcodeInputTimeout: null,
+        lastBarcodeInputTime: 0,
+        scanningBarcode: false,
+        audioContext: null,
+        pendingPayments: [],
+        filteredPendingPayments: [],
+        pendingPaymentSearch: '',
+        selectedPendingPayment: null,
+        loadingPendingPayments: false,
+        showCompatibility: false,
+        compatibilityProduct: null,
 
         cartTotal: {
             subtotal: 0,
@@ -498,12 +718,100 @@ function posInterface() {
         init() {
             this.calculateTotal();
             
+            // Auto-focus barcode input on page load
+            // Use multiple methods to ensure focus works reliably
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    if (this.$refs.barcodeInput) {
+                        this.$refs.barcodeInput.focus();
+                    }
+                }, 100);
+            });
+            
+            // Also focus after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                if (this.$refs.barcodeInput) {
+                    this.$refs.barcodeInput.focus();
+                }
+            }, 300);
+            
             // Auto-populate M-Pesa phone from selected customer
             this.$watch('selectedCustomer', (customer) => {
                 if (customer && customer.phone && !this.mpesaPhoneNumber) {
                     this.mpesaPhoneNumber = customer.phone;
                 }
             });
+            
+            // Load pending payments on page load
+            this.loadPendingPayments();
+            
+            // Watch payment method changes
+            this.$watch('paymentMethod', (method) => {
+                if (method !== 'M-Pesa' && this.selectedPendingPayment) {
+                    this.selectedPendingPayment = null;
+                    this.transactionReference = '';
+                }
+            });
+            
+            // Initialize audio context on first user interaction
+            this.initializeAudio();
+        },
+
+        initializeAudio() {
+            // Initialize audio context on first user interaction (required by browsers)
+            const initAudio = () => {
+                try {
+                    if (!this.audioContext) {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    // Resume audio context if suspended (required by some browsers)
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                } catch (error) {
+                    console.log('Audio initialization failed:', error);
+                }
+            };
+            
+            // Initialize on any user interaction
+            document.addEventListener('click', initAudio, { once: true });
+            document.addEventListener('keydown', initAudio, { once: true });
+            this.$refs.barcodeInput?.addEventListener('focus', initAudio, { once: true });
+        },
+
+        playBeepSound() {
+            try {
+                // Create or reuse audio context
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // Resume if suspended
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                // Configure beep sound (short, pleasant beep)
+                oscillator.frequency.value = 800; // Frequency in Hz (higher = more beep-like)
+                oscillator.type = 'sine'; // Sine wave for a smooth beep
+                
+                // Volume control (30% volume)
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime); // Start volume
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1); // Fade out
+
+                // Play beep (100ms duration)
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.1);
+            } catch (error) {
+                // Fallback: If Web Audio API is not available, silently fail
+                console.log('Audio playback failed:', error);
+            }
         },
 
         async searchProducts() {
@@ -521,6 +829,106 @@ function posInterface() {
                 console.error('Search error:', error);
             } finally {
                 this.loading = false;
+            }
+        },
+
+        handleBarcodeInput(event) {
+            const currentTime = Date.now();
+            
+            // Detect if this is a barcode scanner input
+            // Barcode scanners typically send characters very quickly (< 50ms between chars)
+            // and end with Enter, Tab, or other special keys
+            if (event.key === 'Enter' || event.key === 'Tab') {
+                // Clear any pending timeout
+                if (this.barcodeInputTimeout) {
+                    clearTimeout(this.barcodeInputTimeout);
+                    this.barcodeInputTimeout = null;
+                }
+                
+                // If Enter was pressed and input was rapid, it's likely from a scanner
+                if (event.key === 'Enter' && (currentTime - this.lastBarcodeInputTime) < 100) {
+                    event.preventDefault();
+                    this.searchByBarcode();
+                    return false;
+                }
+            } else {
+                // Regular character input
+                this.lastBarcodeInputTime = currentTime;
+                
+                // Clear previous timeout
+                if (this.barcodeInputTimeout) {
+                    clearTimeout(this.barcodeInputTimeout);
+                }
+                
+                // Set timeout to detect end of input (for scanners that don't send Enter)
+                this.barcodeInputTimeout = setTimeout(() => {
+                    // Input has stopped, could be end of barcode scan
+                    if (this.barcodeQuery && this.barcodeQuery.length >= 3) {
+                        this.searchByBarcode();
+                    }
+                }, 200);
+            }
+        },
+
+        handleBarcodeChange() {
+            // Clear timeout when user manually types
+            if (this.barcodeInputTimeout) {
+                clearTimeout(this.barcodeInputTimeout);
+                this.barcodeInputTimeout = null;
+            }
+        },
+
+        async searchByBarcode() {
+            if (!this.barcodeQuery || this.barcodeQuery.trim().length === 0) {
+                return;
+            }
+
+            const barcode = this.barcodeQuery.trim();
+            this.scanningBarcode = true;
+
+            try {
+                // Search for product by barcode
+                const response = await fetch(`{{ route('pos.search') }}?search=${encodeURIComponent(barcode)}`);
+                const data = await response.json();
+                
+                // Find exact barcode match
+                const product = data.find(p => p.barcode === barcode || p.part_number === barcode || p.sku === barcode);
+                
+                if (product) {
+                    // Check if product is in stock
+                    if (product.stock_quantity <= 0) {
+                        alert(`${product.name} is out of stock`);
+                        this.barcodeQuery = '';
+                        this.$refs.barcodeInput?.focus();
+                        return;
+                    }
+                    
+                    // Add to cart
+                    this.addToCart(product);
+                    
+                    // Play beep sound for successful scan
+                    this.playBeepSound();
+                    
+                    // Clear barcode input and refocus
+                    this.barcodeQuery = '';
+                    this.$refs.barcodeInput?.focus();
+                } else {
+                    // No exact match found, show search results
+                    if (data.length > 0) {
+                        this.products = data;
+                        this.searchQuery = barcode;
+                        alert(`Found ${data.length} product(s) matching "${barcode}". Please select from the list.`);
+                    } else {
+                        alert(`No product found with barcode "${barcode}"`);
+                        this.barcodeQuery = '';
+                        this.$refs.barcodeInput?.focus();
+                    }
+                }
+            } catch (error) {
+                console.error('Barcode search error:', error);
+                alert('Error searching for barcode. Please try again.');
+            } finally {
+                this.scanningBarcode = false;
             }
         },
 
@@ -586,9 +994,15 @@ function posInterface() {
 
         updateItemPrice(index) {
             const item = this.cart[index];
-            if (item.price < item.min_price) {
+            const price = Number(item.price);
+            const minPrice = Number(item.min_price);
+            
+            if (isNaN(price) || price < minPrice) {
                 alert(`Price cannot be below minimum price of KES ${this.formatPrice(item.min_price)}. Price will be set to minimum.`);
-                item.price = parseFloat(item.min_price);
+                item.price = minPrice;
+            } else {
+                // Ensure price is stored as a number
+                item.price = price;
             }
             this.calculateTotal();
         },
@@ -608,7 +1022,10 @@ function posInterface() {
 
             // Validate cart items
             for (let item of this.cart) {
-                if (item.price < item.min_price) {
+                const price = Number(item.price);
+                const minPrice = Number(item.min_price);
+                
+                if (isNaN(price) || price < minPrice) {
                     alert(`${item.name}: Price below minimum (KES ${this.formatPrice(item.min_price)})`);
                     return;
                 }
@@ -623,15 +1040,28 @@ function posInterface() {
                 return;
             }
 
-            if (this.paymentMethod === 'M-Pesa' && !this.transactionReference) {
-                alert('Please initiate STK Push and wait for payment confirmation');
-                return;
+            if (this.paymentMethod === 'M-Pesa') {
+                // If C2B payment is selected, validate it
+                if (this.selectedPendingPayment) {
+                    // Validate amount match
+                    const difference = Math.abs(this.selectedPendingPayment.amount - this.cartTotal.total);
+                    if (difference > 0.01) {
+                        if (!confirm(`Payment amount (KES ${this.formatPrice(this.selectedPendingPayment.amount)}) does not match cart total (KES ${this.formatPrice(this.cartTotal.total)}). Continue anyway?`)) {
+                            return;
+                        }
+                    }
+                } else if (!this.transactionReference) {
+                    // If no C2B payment selected and no STK reference, require one
+                    alert('Please select a C2B payment or initiate STK Push');
+                    return;
+                }
             }
 
             this.processing = true;
 
             try {
-                const response = await fetch('{{ route("sales.store") }}', {
+                // First create the sale
+                const saleResponse = await fetch('{{ route("sales.store") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -645,7 +1075,8 @@ function posInterface() {
                             price: item.price,
                         })),
                         payment_method: this.paymentMethod,
-                        transaction_reference: this.transactionReference || null,
+                        transaction_reference: this.selectedPendingPayment ? this.selectedPendingPayment.transaction_reference : (this.transactionReference || null),
+                        pending_payment_id: this.selectedPendingPayment ? this.selectedPendingPayment.id : null,
                         subtotal: this.cartTotal.subtotal,
                         tax: this.cartTotal.tax,
                         discount: this.cartTotal.discount,
@@ -653,13 +1084,41 @@ function posInterface() {
                     }),
                 });
 
-                const data = await response.json();
+                const saleData = await saleResponse.json();
 
-                if (data.success) {
+                if (saleData.success) {
+                    // If C2B payment was selected, allocate it to the sale
+                    if (this.selectedPendingPayment && this.paymentMethod === 'M-Pesa') {
+                        try {
+                            const allocateResponse = await fetch(`/pending-payments/${this.selectedPendingPayment.id}/allocate`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                },
+                                body: JSON.stringify({
+                                    sale_id: saleData.sale_id,
+                                }),
+                            });
+
+                            const allocateData = await allocateResponse.json();
+                            
+                            if (!allocateData.success) {
+                                console.warn('C2B allocation failed:', allocateData.message);
+                                // Sale was created, but allocation failed - show warning
+                                alert(`Sale created successfully, but payment allocation failed: ${allocateData.message}. Please allocate manually from pending payments.`);
+                            }
+                        } catch (error) {
+                            console.error('Allocation error:', error);
+                            // Sale was created, but allocation failed - show warning
+                            alert('Sale created successfully, but payment allocation failed. Please allocate manually from pending payments.');
+                        }
+                    }
+                    
                     // Redirect to receipt
-                    window.location.href = data.redirect_url;
+                    window.location.href = saleData.redirect_url;
                 } else {
-                    alert(data.message || 'Checkout failed');
+                    alert(saleData.message || 'Checkout failed');
                 }
             } catch (error) {
                 console.error('Checkout error:', error);
@@ -863,6 +1322,72 @@ function posInterface() {
 
         formatPrice(price) {
             return parseFloat(price).toFixed(2);
+        },
+
+        async loadPendingPayments() {
+            this.loadingPendingPayments = true;
+            try {
+                const response = await fetch('{{ route("pending-payments.getPending") }}', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.pendingPayments = Array.isArray(data) ? data : (data.data || []);
+                    this.filteredPendingPayments = this.pendingPayments;
+                } else {
+                    console.error('Failed to load pending payments');
+                }
+            } catch (error) {
+                console.error('Error loading pending payments:', error);
+            } finally {
+                this.loadingPendingPayments = false;
+            }
+        },
+
+        searchPendingPayments() {
+            if (!this.pendingPaymentSearch || this.pendingPaymentSearch.trim().length === 0) {
+                this.filteredPendingPayments = this.pendingPayments;
+                return;
+            }
+
+            const search = this.pendingPaymentSearch.toLowerCase().trim();
+            this.filteredPendingPayments = this.pendingPayments.filter(payment => {
+                return (
+                    (payment.phone_number && payment.phone_number.toLowerCase().includes(search)) ||
+                    (payment.transaction_reference && payment.transaction_reference.toLowerCase().includes(search)) ||
+                    (payment.account_reference && payment.account_reference.toLowerCase().includes(search)) ||
+                    (payment.amount && payment.amount.toString().includes(search)) ||
+                    (payment.first_name && payment.first_name.toLowerCase().includes(search)) ||
+                    (payment.last_name && payment.last_name.toLowerCase().includes(search))
+                );
+            });
+        },
+
+        selectPendingPayment(payment) {
+            this.selectedPendingPayment = payment;
+            this.transactionReference = payment.transaction_reference;
+            
+            // Automatically set payment method to M-Pesa if C2B payment is selected
+            if (this.paymentMethod !== 'M-Pesa') {
+                this.paymentMethod = 'M-Pesa';
+            }
+            
+            // Clear STK push fields when C2B payment is selected
+            this.mpesaPhoneNumber = '';
+        },
+
+        toggleCompatibility(product) {
+            if (this.showCompatibility && this.compatibilityProduct && this.compatibilityProduct.id === product.id) {
+                this.showCompatibility = false;
+                this.compatibilityProduct = null;
+            } else {
+                this.compatibilityProduct = product;
+                this.showCompatibility = true;
+            }
         }
     }
 }

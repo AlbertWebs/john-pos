@@ -42,7 +42,7 @@
                         @enderror
                     </div>
 
-                    <!-- SKU -->
+                    <!-- SKU (Display Only - Auto-generated) -->
                     <div>
                         <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
                         <input 
@@ -50,25 +50,42 @@
                             name="sku" 
                             id="sku"
                             value="{{ old('sku', $inventory->sku) }}"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('sku') border-red-500 @enderror"
-                            placeholder="e.g., SKU-12345"
+                            readonly
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                            placeholder="Auto-generated"
                         >
-                        @error('sku')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <p class="mt-1 text-xs text-gray-500">SKU is auto-generated and cannot be edited</p>
                     </div>
 
                     <!-- Barcode -->
                     <div>
-                        <label for="barcode" class="block text-sm font-medium text-gray-700 mb-2">Barcode</label>
-                        <input 
-                            type="text" 
-                            name="barcode" 
-                            id="barcode"
-                            value="{{ old('barcode', $inventory->barcode) }}"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('barcode') border-red-500 @enderror"
-                            placeholder="e.g., BC0000000001"
-                        >
+                        <label for="barcode" class="block text-sm font-medium text-gray-700 mb-2">
+                            Barcode
+                            <span class="text-xs text-gray-500 font-normal">(Scan or enter manually)</span>
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                name="barcode" 
+                                id="barcode"
+                                value="{{ old('barcode', $inventory->barcode) }}"
+                                x-ref="barcodeInput"
+                                @keydown="handleBarcodeInput($event)"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('barcode') border-red-500 @enderror"
+                                placeholder="Scan barcode or enter manually"
+                                autocomplete="off"
+                            >
+                            <button 
+                                type="button"
+                                @click="toggleCameraScanner"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-blue-600 transition"
+                                title="Toggle camera scanner"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </button>
+                        </div>
                         @error('barcode')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -383,6 +400,68 @@ function inventoryForm() {
     return {
         minPrice: {{ old('min_price', $inventory->min_price) }},
         sellingPrice: {{ old('selling_price', $inventory->selling_price) }},
+        barcodeInputTimeout: null,
+        lastBarcodeInputTime: 0,
+        cameraScannerActive: false,
+        
+        init() {
+            // Auto-focus barcode field on page load
+            this.$nextTick(() => {
+                this.$refs.barcodeInput?.focus();
+            });
+            
+            // Listen for keyboard shortcuts (Ctrl+B or Cmd+B to focus barcode)
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                    e.preventDefault();
+                    this.$refs.barcodeInput?.focus();
+                }
+            });
+        },
+        
+        handleBarcodeInput(event) {
+            const input = event.target;
+            const currentTime = Date.now();
+            
+            // Detect if this is a barcode scanner input
+            // Barcode scanners typically send characters very quickly (< 50ms between chars)
+            // and end with Enter, Tab, or other special keys
+            if (event.key === 'Enter' || event.key === 'Tab') {
+                // Clear any pending timeout
+                if (this.barcodeInputTimeout) {
+                    clearTimeout(this.barcodeInputTimeout);
+                    this.barcodeInputTimeout = null;
+                }
+                
+                // If Enter was pressed and input was rapid, it's likely from a scanner
+                if (event.key === 'Enter' && (currentTime - this.lastBarcodeInputTime) < 100) {
+                    event.preventDefault();
+                    // Process the barcode (you can add lookup logic here if needed)
+                    // For now, just prevent form submission
+                    return false;
+                }
+            } else {
+                // Regular character input
+                this.lastBarcodeInputTime = currentTime;
+                
+                // Clear previous timeout
+                if (this.barcodeInputTimeout) {
+                    clearTimeout(this.barcodeInputTimeout);
+                }
+                
+                // Set timeout to detect end of input (for scanners that don't send Enter)
+                this.barcodeInputTimeout = setTimeout(() => {
+                    // Input has stopped, could be end of barcode scan
+                    // You can add auto-lookup or validation here if needed
+                }, 200);
+            }
+        },
+        
+        toggleCameraScanner() {
+            // Placeholder for camera scanner functionality
+            // You can integrate libraries like QuaggaJS or Html5Qrcode here
+            alert('Camera scanner functionality can be added here. Would you like to integrate a barcode scanning library?');
+        }
     }
 }
 </script>

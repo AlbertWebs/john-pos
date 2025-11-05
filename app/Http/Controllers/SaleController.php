@@ -37,6 +37,7 @@ class SaleController extends Controller
             'tax' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
+            'pending_payment_id' => 'nullable|exists:pending_payments,id',
         ]);
 
         DB::beginTransaction();
@@ -45,6 +46,10 @@ class SaleController extends Controller
             $invoiceNumber = $this->generateInvoiceNumber();
 
             // Create sale
+            // If pending payment is being allocated, set payment status to 'pending' (will be updated during allocation)
+            // Otherwise, set to 'completed' for immediate payment
+            $paymentStatus = $request->filled('pending_payment_id') ? 'pending' : 'completed';
+            
             $sale = Sale::create([
                 'invoice_number' => $invoiceNumber,
                 'customer_id' => $validated['customer_id'] ?? null,
@@ -54,7 +59,7 @@ class SaleController extends Controller
                 'tax' => $validated['tax'] ?? 0,
                 'discount' => $validated['discount'] ?? 0,
                 'total_amount' => $validated['total_amount'],
-                'payment_status' => 'completed',
+                'payment_status' => $paymentStatus,
             ]);
 
             // Create sale items and update inventory
@@ -94,14 +99,16 @@ class SaleController extends Controller
                 ]);
             }
 
-            // Create payment record
-            Payment::create([
-                'sale_id' => $sale->id,
-                'payment_method' => $validated['payment_method'],
-                'amount' => $validated['total_amount'],
-                'transaction_reference' => $request->transaction_reference ?? null,
-                'payment_date' => now(),
-            ]);
+            // Create payment record (skip if pending payment is being allocated - it will be created during allocation)
+            if (!$request->filled('pending_payment_id')) {
+                Payment::create([
+                    'sale_id' => $sale->id,
+                    'payment_method' => $validated['payment_method'],
+                    'amount' => $validated['total_amount'],
+                    'transaction_reference' => $request->transaction_reference ?? null,
+                    'payment_date' => now(),
+                ]);
+            }
 
             // Update customer loyalty points (if customer exists)
             if ($sale->customer_id) {
@@ -147,6 +154,18 @@ class SaleController extends Controller
         return view('sales.show', compact('sale', 'settings'));
     }
 
+    public function print(Sale $sale)
+    {
+        $sale->load(['customer', 'user', 'saleItems.part', 'payments']);
+        
+        // Get company settings
+        $settings = \Illuminate\Support\Facades\DB::table('settings')
+            ->pluck('value', 'key')
+            ->toArray();
+        
+        return view('sales.print', compact('sale', 'settings'));
+    }
+
     private function exportReceiptPDF(Sale $sale)
     {
         // Get company settings
@@ -160,7 +179,10 @@ class SaleController extends Controller
         $options->set('defaultFont', 'DejaVu Sans');
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
+        // Set paper size for 80mm thermal printer (72mm printable width)
+        // 72mm = 283.464 points (width)
+        // Height will be calculated automatically based on content
+        $dompdf->setPaper([0, 0, 283.464, 10000], 'portrait');
         $dompdf->render();
 
         return response()->streamDownload(function() use ($dompdf) {

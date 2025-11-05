@@ -46,7 +46,8 @@
 
             <!-- Navigation -->
             <nav class="flex-1 overflow-y-auto py-4 px-2" style="scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent;">
-                <!-- Dashboard -->
+                <!-- Dashboard - Hidden for cashiers -->
+                @unless(Auth::user()->isCashier())
                 <a href="{{ route('dashboard') }}" 
                    class="flex items-center {{ request()->routeIs('dashboard') ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:bg-white/10' }} px-4 py-3 rounded-xl mb-2 transition-all group"
                    title="Dashboard"
@@ -56,6 +57,7 @@
                     </svg>
                     <span x-show="!sidebarCollapsed" class="font-medium">Dashboard</span>
                 </a>
+                @endunless
 
                 <!-- Management Section -->
                 @can('manage inventory')
@@ -112,6 +114,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
                             <span x-show="!sidebarCollapsed">Vehicle Makes</span>
+                        </a>
+                        <a href="{{ route('vehicle-models.index') }}" 
+                           class="flex items-center {{ request()->routeIs('vehicle-models.*') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                           title="Vehicle Models"
+                        >
+                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span x-show="!sidebarCollapsed">Vehicle Models</span>
                         </a>
                         <a href="{{ route('customers.index') }}" 
                            class="flex items-center {{ request()->routeIs('customers.*') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
@@ -242,6 +253,32 @@
                     </div>
                     @endcan
 
+                    <!-- Admin Pages - Only for super_admin -->
+                    @unless(Auth::user()->isCashier())
+                    <div class="mt-4 pt-4 border-t border-blue-400/30">
+                        <a href="{{ route('admin.sales-reports.index') }}" 
+                           class="flex items-center {{ request()->routeIs('admin.sales-reports.*') ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:bg-white/10' }} px-4 py-3 rounded-xl mb-2 transition-all group"
+                           title="Sales Reports"
+                        >
+                            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span x-show="!sidebarCollapsed" class="font-medium">Sales Reports</span>
+                        </a>
+                        <a href="{{ route('admin.stock-status.index') }}" 
+                           class="flex items-center {{ request()->routeIs('admin.stock-status.*') ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:bg-white/10' }} px-4 py-3 rounded-xl mb-2 transition-all group"
+                           title="Stock Status"
+                        >
+                            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                            <span x-show="!sidebarCollapsed" class="font-medium">Stock Status</span>
+                        </a>
+                    </div>
+                    @endunless
+
+                    <!-- Settings - Hidden for cashiers -->
+                    @unless(Auth::user()->isCashier())
                     <a href="{{ route('settings.index') }}" 
                        class="flex items-center {{ request()->routeIs('settings.*') ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:bg-white/10' }} px-4 py-3 rounded-xl mb-2 transition-all group"
                        title="Settings"
@@ -252,11 +289,12 @@
                         </svg>
                         <span x-show="!sidebarCollapsed" class="font-medium">Settings</span>
                     </a>
+                    @endunless
                 </div>
             </nav>
 
             <!-- Logout -->
-            <div class="p-4 border-t border-blue-500/30">
+            <div class="p-4 border-t border-blue-500/30 space-y-2">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="w-full flex items-center text-blue-100 hover:bg-red-500/20 hover:text-white px-4 py-3 rounded-xl transition">
@@ -266,6 +304,21 @@
                         <span x-show="!sidebarCollapsed" class="font-medium">{{ Auth::user()->name }}</span>
                     </button>
                 </form>
+                
+                <!-- Temporary C2B Simulator Button -->
+                <!-- <button 
+                    type="button"
+                    @click="simulateC2B()"
+                    :disabled="simulatingC2B"
+                    class="w-full flex items-center justify-center text-yellow-100 hover:bg-yellow-500/20 hover:text-white px-4 py-2 rounded-xl transition text-sm"
+                    :class="simulatingC2B ? 'opacity-50 cursor-not-allowed' : ''"
+                    x-show="!sidebarCollapsed"
+                >
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span class="font-medium" x-text="simulatingC2B ? 'Simulating...' : 'Simulate C2B'"></span>
+                </button> -->
             </div>
         </aside>
         @endauth
@@ -279,7 +332,7 @@
             <header class="bg-white shadow-sm border-b sticky top-0 z-40">
                 <div class="px-6 py-4 flex justify-between items-center">
                     <h2 class="text-xl font-semibold text-gray-900">@yield('title', 'Dashboard')</h2>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-3">
                         <!-- Fullscreen Toggle -->
                         <button 
                             @click="toggleFullscreen()"
@@ -290,6 +343,97 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
                             </svg>
                         </button>
+                        
+                        <!-- User Profile Dropdown -->
+                        <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                            <button 
+                                @click="open = !open"
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition text-gray-700"
+                            >
+                                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                </div>
+                                <span class="text-sm font-medium hidden md:block">{{ Auth::user()->name }}</span>
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div 
+                                x-show="open"
+                                x-cloak
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+                            >
+                                <div class="px-4 py-3 border-b border-gray-200">
+                                    <p class="text-sm font-semibold text-gray-900">{{ Auth::user()->name }}</p>
+                                    <p class="text-xs text-gray-500">{{ Auth::user()->username }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                            {{ ucfirst(str_replace('_', ' ', Auth::user()->role ?? 'user')) }}
+                                        </span>
+                                    </p>
+                                </div>
+                                
+                                <div class="py-1">
+                                    <a href="{{ route('pos.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                            </svg>
+                                            POS
+                                        </div>
+                                    </a>
+                                    @unless(Auth::user()->isCashier())
+                                    <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                            </svg>
+                                            Dashboard
+                                        </div>
+                                    </a>
+                                    @endunless
+                                    <a href="{{ route('sales.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            Sales History
+                                        </div>
+                                    </a>
+                                    @unless(Auth::user()->isCashier())
+                                    <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            Settings
+                                        </div>
+                                    </a>
+                                    @endunless
+                                </div>
+                                
+                                <div class="border-t border-gray-200 py-1">
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                            </svg>
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -327,29 +471,90 @@
         function appLayout() {
             return {
                 sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true' || false,
+                simulatingC2B: false,
                 
                 init() {
-                    // Automatically request fullscreen after login
-                    // Only if not already in fullscreen mode
-                    // This runs on authenticated pages only (layout is only loaded for auth users)
-                    if (!document.fullscreenElement) {
-                        // Small delay to ensure page is fully loaded
-                        setTimeout(() => {
-                            document.documentElement.requestFullscreen().catch(err => {
-                                // Silently fail if user doesn't allow fullscreen or browser doesn't support it
-                                console.log(`Fullscreen not available: ${err.message}`);
-                            });
-                        }, 500);
+                    // No automatic fullscreen - user controls via toggle button
+                },
+                
+                isFullscreen() {
+                    return !!(document.fullscreenElement || 
+                             document.webkitFullscreenElement || 
+                             document.mozFullScreenElement || 
+                             document.msFullscreenElement);
+                },
+                
+                enterFullscreen() {
+                    if (this.isFullscreen()) {
+                        return; // Already in fullscreen
+                    }
+                    
+                    const element = document.documentElement;
+                    
+                    const promise = element.requestFullscreen?.() ||
+                                   element.webkitRequestFullscreen?.() ||
+                                   element.mozRequestFullScreen?.() ||
+                                   element.msRequestFullscreen?.();
+                    
+                    if (promise && promise.catch) {
+                        promise.catch(err => {
+                            console.log(`Fullscreen request failed: ${err.message}`);
+                        });
+                    }
+                },
+                
+                exitFullscreen() {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
                     }
                 },
                 
                 toggleFullscreen() {
-                    if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(err => {
-                            console.log(`Error attempting to enable fullscreen: ${err.message}`);
-                        });
+                    if (this.isFullscreen()) {
+                        this.exitFullscreen();
                     } else {
-                        document.exitFullscreen();
+                        this.enterFullscreen();
+                    }
+                },
+                
+                async simulateC2B() {
+                    this.simulatingC2B = true;
+                    
+                    try {
+                        const response = await fetch('{{ route("mpesa.simulateC2B") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json',
+                            },
+                            credentials: 'same-origin',
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            // Show success message
+                            alert(`C2B Transaction Simulated!\n\nTransaction ID: ${data.simulated_transaction.transaction_id}\nAmount: KES ${data.simulated_transaction.amount}\nPhone: ${data.simulated_transaction.phone_number}\nAccount Ref: ${data.simulated_transaction.account_reference}\nCustomer: ${data.simulated_transaction.customer_name}\n\nCheck Pending Payments to allocate this payment.`);
+                            
+                            // Optionally redirect to pending payments
+                            if (confirm('View pending payments?')) {
+                                window.location.href = '{{ route("pending-payments.index") }}';
+                            }
+                        } else {
+                            alert('Failed to simulate C2B transaction: ' + (data.message || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        console.error('C2B Simulation Error:', error);
+                        alert('Error simulating C2B transaction. Please check console for details.');
+                    } finally {
+                        this.simulatingC2B = false;
                     }
                 }
             }

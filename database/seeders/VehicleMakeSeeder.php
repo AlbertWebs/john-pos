@@ -9,42 +9,32 @@ class VehicleMakeSeeder extends Seeder
 {
     public function run(): void
     {
+        // Vehicle makes popular in Kenya
         $makes = [
-            ['make_name' => 'Toyota'],
-            ['make_name' => 'Honda'],
-            ['make_name' => 'Nissan'],
-            ['make_name' => 'Mazda'],
-            ['make_name' => 'Subaru'],
-            ['make_name' => 'Mitsubishi'],
-            ['make_name' => 'Suzuki'],
-            ['make_name' => 'Isuzu'],
-            ['make_name' => 'Ford'],
-            ['make_name' => 'Chevrolet'],
-            ['make_name' => 'BMW'],
-            ['make_name' => 'Mercedes-Benz'],
-            ['make_name' => 'Volkswagen'],
-            ['make_name' => 'Audi'],
-            ['make_name' => 'Volvo'],
-            ['make_name' => 'Peugeot'],
-            ['make_name' => 'Renault'],
-            ['make_name' => 'Hyundai'],
-            ['make_name' => 'Kia'],
-            ['make_name' => 'Land Rover'],
-            ['make_name' => 'Range Rover'],
-            ['make_name' => 'Jeep'],
-            ['make_name' => 'Dodge'],
-            ['make_name' => 'Chrysler'],
-            ['make_name' => 'Daihatsu'],
-            ['make_name' => 'Lexus'],
-            ['make_name' => 'Infiniti'],
-            ['make_name' => 'Acura'],
-            ['make_name' => 'Cadillac'],
-            ['make_name' => 'Buick'],
-            ['make_name' => 'GMC'],
-            ['make_name' => 'Ram'],
-            ['make_name' => 'Lincoln'],
-            ['make_name' => 'Jaguar'],
-            ['make_name' => 'Porsche'],
+            ['make_name' => 'Toyota'], // Very popular in Kenya
+            ['make_name' => 'Nissan'], // Very popular in Kenya
+            ['make_name' => 'Mazda'], // Popular in Kenya
+            ['make_name' => 'Subaru'], // Popular in Kenya
+            ['make_name' => 'Mitsubishi'], // Popular in Kenya
+            ['make_name' => 'Suzuki'], // Popular in Kenya
+            ['make_name' => 'Isuzu'], // Popular in Kenya
+            ['make_name' => 'Honda'], // Popular in Kenya
+            ['make_name' => 'Ford'], // Popular in Kenya
+            ['make_name' => 'Mercedes-Benz'], // Common in Kenya
+            ['make_name' => 'BMW'], // Common in Kenya
+            ['make_name' => 'Volkswagen'], // Common in Kenya
+            ['make_name' => 'Peugeot'], // Common in Kenya
+            ['make_name' => 'Hyundai'], // Common in Kenya
+            ['make_name' => 'Kia'], // Common in Kenya
+            ['make_name' => 'Land Rover'], // Common in Kenya
+            ['make_name' => 'Range Rover'], // Common in Kenya
+            ['make_name' => 'Audi'], // Less common but present
+            ['make_name' => 'Volvo'], // Less common but present
+            ['make_name' => 'Jeep'], // Less common but present
+            ['make_name' => 'Daihatsu'], // Less common but present
+            ['make_name' => 'Lexus'], // Less common but present
+            ['make_name' => 'Chevrolet'], // Less common but present
+            ['make_name' => 'Renault'], // Less common but present
         ];
 
         foreach ($makes as $make) {

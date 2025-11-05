@@ -10,50 +10,79 @@ class VehicleModelSeeder extends Seeder
 {
     public function run(): void
     {
+        // Vehicle models popular in Kenya
         $models = [
-            // Toyota
-            ['Toyota', 'Corolla', '1990', '2024'],
-            ['Toyota', 'Camry', '1990', '2024'],
-            ['Toyota', 'RAV4', '1994', '2024'],
-            ['Toyota', 'Hilux', '1968', '2024'],
-            ['Toyota', 'Land Cruiser', '1951', '2024'],
-            ['Toyota', 'Prius', '1997', '2024'],
-            ['Toyota', 'Highlander', '2000', '2024'],
-            ['Toyota', '4Runner', '1984', '2024'],
-            ['Toyota', 'Tacoma', '1995', '2024'],
-            ['Toyota', 'Sienna', '1997', '2024'],
+            // Toyota (Very popular in Kenya)
+            ['Toyota', 'Hilux', '1968', '2024'], // Extremely popular
+            ['Toyota', 'Land Cruiser', '1951', '2024'], // Very popular
+            ['Toyota', 'Corolla', '1990', '2024'], // Very popular
+            ['Toyota', 'Camry', '1990', '2024'], // Very popular
+            ['Toyota', 'RAV4', '1994', '2024'], // Popular
+            ['Toyota', 'Probox', '2002', '2024'], // Very popular in Kenya
+            ['Toyota', 'Succeed', '2002', '2024'], // Popular in Kenya
+            ['Toyota', 'Passo', '2004', '2024'], // Popular in Kenya
+            ['Toyota', 'Vitz', '1999', '2024'], // Popular in Kenya
+            ['Toyota', 'Fielder', '2001', '2024'], // Popular in Kenya
             
-            // Honda
-            ['Honda', 'Civic', '1972', '2024'],
-            ['Honda', 'Accord', '1976', '2024'],
-            ['Honda', 'CR-V', '1995', '2024'],
-            ['Honda', 'Pilot', '2002', '2024'],
-            ['Honda', 'Odyssey', '1994', '2024'],
-            ['Honda', 'Fit', '2001', '2024'],
-            ['Honda', 'Ridgeline', '2005', '2024'],
+            // Nissan (Very popular in Kenya)
+            ['Nissan', 'X-Trail', '2000', '2024'], // Very popular
+            ['Nissan', 'Patrol', '1951', '2024'], // Very popular
+            ['Nissan', 'Note', '2004', '2024'], // Popular
+            ['Nissan', 'March', '1982', '2024'], // Popular
+            ['Nissan', 'Almera', '1995', '2024'], // Popular
+            ['Nissan', 'Sunny', '1966', '2024'], // Popular
+            ['Nissan', 'Tiida', '2004', '2024'], // Popular
+            ['Nissan', 'Navara', '1997', '2024'], // Popular
             
-            // Nissan
-            ['Nissan', 'Altima', '1992', '2024'],
-            ['Nissan', 'Sentra', '1982', '2024'],
-            ['Nissan', 'Rogue', '2007', '2024'],
-            ['Nissan', 'Pathfinder', '1986', '2024'],
-            ['Nissan', 'Frontier', '1997', '2024'],
-            ['Nissan', 'Titan', '2003', '2024'],
+            // Mazda (Popular in Kenya)
+            ['Mazda', 'Demio', '1996', '2024'], // Very popular
+            ['Mazda', 'Axela', '2003', '2024'], // Popular
+            ['Mazda', 'CX-5', '2012', '2024'], // Popular
+            ['Mazda', 'BT-50', '2006', '2024'], // Popular
+            ['Mazda', 'Premacy', '1999', '2024'], // Popular
             
-            // Ford
-            ['Ford', 'F-150', '1948', '2024'],
-            ['Ford', 'Mustang', '1964', '2024'],
-            ['Ford', 'Explorer', '1990', '2024'],
-            ['Ford', 'Escape', '2000', '2024'],
-            ['Ford', 'Focus', '1998', '2024'],
-            ['Ford', 'Fusion', '2005', '2024'],
+            // Subaru (Popular in Kenya)
+            ['Subaru', 'Forester', '1997', '2024'], // Popular
+            ['Subaru', 'Outback', '1994', '2024'], // Popular
+            ['Subaru', 'Impreza', '1992', '2024'], // Popular
+            ['Subaru', 'Legacy', '1989', '2024'], // Popular
             
-            // Chevrolet
-            ['Chevrolet', 'Silverado', '1998', '2024'],
-            ['Chevrolet', 'Tahoe', '1992', '2024'],
-            ['Chevrolet', 'Equinox', '2004', '2024'],
-            ['Chevrolet', 'Malibu', '1964', '2024'],
-            ['Chevrolet', 'Cruze', '2008', '2024'],
+            // Mitsubishi (Popular in Kenya)
+            ['Mitsubishi', 'Pajero', '1982', '2024'], // Very popular
+            ['Mitsubishi', 'Lancer', '1973', '2024'], // Popular
+            ['Mitsubishi', 'Outlander', '2001', '2024'], // Popular
+            ['Mitsubishi', 'Triton', '1978', '2024'], // Popular
+            
+            // Suzuki (Popular in Kenya)
+            ['Suzuki', 'Vitara', '1988', '2024'], // Popular
+            ['Suzuki', 'Swift', '1983', '2024'], // Popular
+            ['Suzuki', 'SX4', '2006', '2024'], // Popular
+            ['Suzuki', 'Grand Vitara', '1998', '2024'], // Popular
+            
+            // Isuzu (Popular in Kenya)
+            ['Isuzu', 'D-Max', '2002', '2024'], // Popular
+            ['Isuzu', 'Trooper', '1981', '2024'], // Popular
+            
+            // Honda (Popular in Kenya)
+            ['Honda', 'Civic', '1972', '2024'], // Popular
+            ['Honda', 'CR-V', '1995', '2024'], // Popular
+            ['Honda', 'Accord', '1976', '2024'], // Popular
+            
+            // Ford (Common in Kenya)
+            ['Ford', 'Ranger', '1998', '2024'], // Popular
+            ['Ford', 'Everest', '2003', '2024'], // Popular
+            ['Ford', 'Explorer', '1990', '2024'], // Popular
+            ['Ford', 'Focus', '1998', '2024'], // Popular
+            
+            // Mercedes-Benz (Common in Kenya)
+            ['Mercedes-Benz', 'C-Class', '1993', '2024'],
+            ['Mercedes-Benz', 'E-Class', '1993', '2024'],
+            ['Mercedes-Benz', 'G-Class', '1979', '2024'],
+            
+            // BMW (Common in Kenya)
+            ['BMW', '3 Series', '1975', '2024'],
+            ['BMW', '5 Series', '1972', '2024'],
+            ['BMW', 'X5', '1999', '2024'],
         ];
 
         foreach ($models as $model) {

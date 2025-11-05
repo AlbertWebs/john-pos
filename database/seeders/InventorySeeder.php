@@ -91,10 +91,28 @@ class InventorySeeder extends Seeder
                     'selling_price' => $part['selling'],
                     'stock_quantity' => $part['stock'],
                     'reorder_level' => $part['reorder'],
-                    'location' => 'Shelf ' . chr(65 + ($index % 10)) . '-' . (($index % 20) + 1),
+                    'location' => $this->getKenyanLocation($index),
                     'status' => 'active',
                 ]
             );
         }
+    }
+    
+    private function getKenyanLocation($index)
+    {
+        $locations = [
+            'A-1', 'A-2', 'A-3', 'A-4', 'A-5',
+            'B-1', 'B-2', 'B-3', 'B-4', 'B-5',
+            'C-1', 'C-2', 'C-3', 'C-4', 'C-5',
+            'D-1', 'D-2', 'D-3', 'D-4', 'D-5',
+            'E-1', 'E-2', 'E-3', 'E-4', 'E-5',
+            'F-1', 'F-2', 'F-3', 'F-4', 'F-5',
+            'G-1', 'G-2', 'G-3', 'G-4', 'G-5',
+            'H-1', 'H-2', 'H-3', 'H-4', 'H-5',
+            'I-1', 'I-2', 'I-3', 'I-4', 'I-5',
+            'J-1', 'J-2', 'J-3', 'J-4', 'J-5',
+        ];
+        
+        return $locations[$index % count($locations)];
     }
 }

@@ -10,8 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
+        // Ensure session is started
+        $request->session()->regenerateToken();
         return view('auth.login');
     }
 
@@ -45,14 +47,7 @@ class LoginController extends Controller
 
     protected function redirectTo()
     {
-        $user = Auth::user();
-        
-        if ($user->isSuperAdmin()) {
-            return route('dashboard');
-        } else if ($user->isCashier()) {
-            return route('pos.index');
-        }
-
-        return route('dashboard');
+        // Redirect all users to POS after login
+        return route('pos.index');
     }
 }

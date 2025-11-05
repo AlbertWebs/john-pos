@@ -244,4 +244,116 @@ class MpesaController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Simulate Random C2B Transaction (for testing)
+     */
+    public function simulateC2B(Request $request)
+    {
+        // Generate random transaction data
+        $firstNames = ['John', 'Jane', 'James', 'Mary', 'Robert', 'Patricia', 'Michael', 'Linda', 'William', 'Elizabeth'];
+        $lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+        $middleNames = ['', 'A', 'B', 'C', 'D', 'E'];
+        
+        $firstName = $firstNames[array_rand($firstNames)];
+        $lastName = $lastNames[array_rand($lastNames)];
+        $middleName = $middleNames[array_rand($middleNames)];
+        
+        // Generate random phone number (Kenyan format)
+        $phoneNumber = '2547' . rand(10000000, 99999999);
+        
+        // Generate random amount between 100 and 10000
+        $amount = rand(100, 10000);
+        
+        // Generate random transaction ID (format: RAI + timestamp + random)
+        $transactionId = 'RAI' . date('YmdHis') . rand(1000, 9999);
+        
+        // Generate transaction time (current time in M-Pesa format: YYYYMMDDHHmmss)
+        $transTime = date('YmdHis');
+        
+        // Generate random account reference (can be invoice number or any reference)
+        $accountReferences = ['INV-202501-0001', 'SALE-001', 'POS-' . date('Ymd'), 'CUSTOM-' . rand(1000, 9999)];
+        $accountReference = $accountReferences[array_rand($accountReferences)];
+        
+        // Simulate M-Pesa C2B callback payload
+        $simulatedData = [
+            'TransactionType' => 'CustomerPayBillOnline',
+            'TransID' => $transactionId,
+            'TransTime' => $transTime,
+            'TransAmount' => $amount,
+            'BusinessShortCode' => env('MPESA_SHORTCODE', '123456'),
+            'BillRefNumber' => $accountReference,
+            'InvoiceNumber' => '',
+            'OrgAccountBalance' => rand(100000, 1000000),
+            'ThirdPartyTransID' => '',
+            'MSISDN' => $phoneNumber,
+            'FirstName' => $firstName,
+            'MiddleName' => $middleName,
+            'LastName' => $lastName,
+        ];
+        
+        // Process the simulated C2B transaction directly
+        try {
+            // Check if transaction already exists
+            $existingPayment = PendingPayment::where('transaction_reference', $transactionId)->first();
+            
+            if ($existingPayment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction with this ID already exists',
+                    'transaction_id' => $transactionId,
+                ], 400);
+            }
+
+            // Parse transaction date
+            $transactionDate = \Carbon\Carbon::createFromFormat('YmdHis', $transTime);
+
+            // Create pending payment
+            $pendingPayment = PendingPayment::create([
+                'transaction_reference' => $transactionId,
+                'phone_number' => $phoneNumber,
+                'amount' => $amount,
+                'account_reference' => $accountReference,
+                'first_name' => $firstName,
+                'middle_name' => $middleName,
+                'last_name' => $lastName,
+                'transaction_type' => 'C2B',
+                'status' => 'pending',
+                'transaction_date' => $transactionDate,
+                'raw_data' => $simulatedData,
+            ]);
+
+            Log::info('C2B Transaction Simulated', [
+                'transaction_id' => $transactionId,
+                'amount' => $amount,
+                'account_reference' => $accountReference,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'C2B transaction simulated successfully',
+                'simulated_transaction' => [
+                    'transaction_id' => $transactionId,
+                    'phone_number' => $phoneNumber,
+                    'amount' => $amount,
+                    'account_reference' => $accountReference,
+                    'customer_name' => trim("$firstName $middleName $lastName"),
+                    'transaction_date' => $transactionDate->toDateTimeString(),
+                    'pending_payment_id' => $pendingPayment->id,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('C2B Simulation Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to simulate C2B transaction',
+                'error' => $e->getMessage(),
+                'simulated_data' => $simulatedData,
+            ], 500);
+        }
+    }
 }

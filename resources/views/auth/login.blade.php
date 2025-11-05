@@ -113,28 +113,53 @@
                     if (this.pin.length < 4) {
                         this.pin += num.toString();
                         
+                        // Update hidden input immediately
+                        const pinInput = document.querySelector('input[name="pin"]');
+                        if (pinInput) {
+                            pinInput.value = this.pin;
+                        }
+                        
                         // Auto-submit when PIN is complete
                         if (this.pin.length === 4 && this.username) {
+                            // Use a small delay to ensure all values are set
                             setTimeout(() => {
-                                // Ensure form values are set before submission
-                                const form = document.getElementById('loginForm');
-                                const pinInput = form.querySelector('input[name="pin"]');
-                                if (pinInput) {
-                                    pinInput.value = this.pin;
-                                }
-                                // Ensure CSRF token is present
-                                const csrfToken = document.querySelector('meta[name="csrf-token"]');
-                                if (csrfToken && !form.querySelector('input[name="_token"]')) {
-                                    const csrfInput = document.createElement('input');
-                                    csrfInput.type = 'hidden';
-                                    csrfInput.name = '_token';
-                                    csrfInput.value = csrfToken.content;
-                                    form.appendChild(csrfInput);
-                                }
-                                form.submit();
-                            }, 300);
+                                this.submitForm();
+                            }, 100);
                         }
                     }
+                },
+                
+                submitForm() {
+                    const form = document.getElementById('loginForm');
+                    if (!form) return;
+                    
+                    // Ensure all form values are set
+                    const pinInput = form.querySelector('input[name="pin"]');
+                    if (pinInput) {
+                        pinInput.value = this.pin;
+                    }
+                    
+                    const usernameInput = form.querySelector('input[name="username"]');
+                    if (usernameInput) {
+                        usernameInput.value = this.username;
+                    }
+                    
+                    // Ensure CSRF token is present
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfToken) {
+                        let tokenInput = form.querySelector('input[name="_token"]');
+                        if (!tokenInput) {
+                            tokenInput = document.createElement('input');
+                            tokenInput.type = 'hidden';
+                            tokenInput.name = '_token';
+                            form.appendChild(tokenInput);
+                        }
+                        tokenInput.value = csrfToken.getAttribute('content');
+                    }
+                    
+                    // Submit the form normally (this preserves CSRF token)
+                    // Use form.submit() which will include all form fields including CSRF token
+                    form.submit();
                 },
                 
                 clearPin() {
@@ -152,6 +177,10 @@
                     if (pinInput) {
                         pinInput.value = this.pin;
                     }
+                    const usernameInput = form.querySelector('input[name="username"]');
+                    if (usernameInput) {
+                        usernameInput.value = this.username;
+                    }
                     // Ensure CSRF token is present and up-to-date
                     const csrfToken = document.querySelector('meta[name="csrf-token"]');
                     if (csrfToken) {
@@ -162,7 +191,7 @@
                             tokenInput.name = '_token';
                             form.appendChild(tokenInput);
                         }
-                        tokenInput.value = csrfToken.content;
+                        tokenInput.value = csrfToken.getAttribute('content');
                     }
                 }
             }
