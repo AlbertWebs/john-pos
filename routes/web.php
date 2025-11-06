@@ -11,6 +11,31 @@ use App\Http\Controllers\VehicleMakeController;
 use App\Http\Controllers\VehicleModelController;
 use App\Http\Controllers\CustomerController;
 
+// Public E-commerce Routes (for johllyautospares.co.ke)
+// These routes are accessible without authentication
+Route::prefix('shop')->name('ecommerce.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\EcommerceController::class, 'index'])->name('index');
+    Route::get('/products', [\App\Http\Controllers\EcommerceController::class, 'products'])->name('products');
+    Route::get('/product/{id}', [\App\Http\Controllers\EcommerceController::class, 'product'])->name('product');
+    Route::post('/cart/add', [\App\Http\Controllers\EcommerceController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/update', [\App\Http\Controllers\EcommerceController::class, 'updateCart'])->name('cart.update');
+    Route::post('/cart/remove', [\App\Http\Controllers\EcommerceController::class, 'removeFromCart'])->name('cart.remove');
+    Route::get('/cart', [\App\Http\Controllers\EcommerceController::class, 'cart'])->name('cart');
+    Route::get('/checkout', [\App\Http\Controllers\EcommerceController::class, 'checkout'])->name('checkout');
+    Route::post('/order', [\App\Http\Controllers\EcommerceController::class, 'placeOrder'])->name('order');
+    Route::get('/order-confirmation/{id}', [\App\Http\Controllers\EcommerceController::class, 'orderConfirmation'])->name('order-confirmation');
+    Route::get('/api/vehicle-models/{makeId}', [\App\Http\Controllers\EcommerceController::class, 'getVehicleModels'])->name('api.vehicle-models');
+    Route::get('/payment-status/{id}', [\App\Http\Controllers\EcommerceController::class, 'checkPaymentStatus'])->name('payment-status');
+});
+
+// Sitemap
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
+
+// Redirect old order-confirmation URLs (without /shop prefix) to new format
+Route::get('/order-confirmation/{id}', function($id) {
+    return redirect()->route('ecommerce.order-confirmation', $id);
+});
+
 // Authentication Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -92,6 +117,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/sales-reports', [\App\Http\Controllers\Admin\SalesReportLogController::class, 'index'])->name('sales-reports.index');
         Route::get('/stock-status', [\App\Http\Controllers\Admin\StockStatusController::class, 'index'])->name('stock-status.index');
+        Route::resource('seo-settings', \App\Http\Controllers\Admin\SeoSettingsController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
     });
     
     // M-Pesa (STK Push and status check require authentication)
@@ -109,13 +135,43 @@ Route::middleware('auth')->group(function () {
     Route::post('/pending-payments/{pendingPayment}/cancel', [\App\Http\Controllers\PendingPaymentController::class, 'cancel'])->name('pending-payments.cancel');
     Route::get('/pending-payments/{pendingPayment}', [\App\Http\Controllers\PendingPaymentController::class, 'show'])->name('pending-payments.show');
     
+    // Website Management (Images and Descriptions only)
+    Route::prefix('website')->name('website.')->group(function () {
+        Route::get('/products', [\App\Http\Controllers\Website\WebsiteProductController::class, 'index'])->name('products.index');
+        Route::get('/products/{product}/edit', [\App\Http\Controllers\Website\WebsiteProductController::class, 'edit'])->name('products.edit');
+        Route::put('/products/{product}', [\App\Http\Controllers\Website\WebsiteProductController::class, 'update'])->name('products.update');
+        
+        Route::get('/categories', [\App\Http\Controllers\Website\WebsiteCategoryController::class, 'index'])->name('categories.index');
+        Route::get('/categories/{category}/edit', [\App\Http\Controllers\Website\WebsiteCategoryController::class, 'edit'])->name('categories.edit');
+        Route::put('/categories/{category}', [\App\Http\Controllers\Website\WebsiteCategoryController::class, 'update'])->name('categories.update');
+        
+        Route::get('/brands', [\App\Http\Controllers\Website\WebsiteBrandController::class, 'index'])->name('brands.index');
+        Route::get('/brands/{brand}/edit', [\App\Http\Controllers\Website\WebsiteBrandController::class, 'edit'])->name('brands.edit');
+        Route::put('/brands/{brand}', [\App\Http\Controllers\Website\WebsiteBrandController::class, 'update'])->name('brands.update');
+        
+        Route::get('/vehicle-models', [\App\Http\Controllers\Website\WebsiteVehicleModelController::class, 'index'])->name('vehicle-models.index');
+        Route::get('/vehicle-models/{vehicleModel}/edit', [\App\Http\Controllers\Website\WebsiteVehicleModelController::class, 'edit'])->name('vehicle-models.edit');
+        Route::put('/vehicle-models/{vehicleModel}', [\App\Http\Controllers\Website\WebsiteVehicleModelController::class, 'update'])->name('vehicle-models.update');
+    });
+    
     // Redirect root to POS for authenticated users
     Route::get('/', function () {
         return redirect()->route('pos.index');
     });
 });
 
-// Redirect unauthenticated root to login
+// Root route - redirect based on subdomain or to e-commerce
+// In production: pos.johllyautospares.co.ke -> POS, johllyautospares.co.ke -> E-commerce
+// In localhost: /shop -> E-commerce, / -> POS (if authenticated) or login
 Route::get('/', function () {
+    // Check if we're on the main domain (not pos subdomain)
+    // For localhost, we'll redirect to shop
+    if (request()->getHost() === 'localhost' || request()->getHost() === '127.0.0.1' || !str_contains(request()->getHost(), 'pos.')) {
+        return redirect()->route('ecommerce.index');
+    }
+    // If on pos subdomain or authenticated, go to POS
+    if (auth()->check()) {
+        return redirect()->route('pos.index');
+    }
     return redirect()->route('login');
 })->middleware('guest');

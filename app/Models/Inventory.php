@@ -18,6 +18,7 @@ class Inventory extends Model
         'barcode',
         'name',
         'description',
+        'image',
         'brand_id',
         'category_id',
         'vehicle_make_id',

@@ -14,6 +14,7 @@ class VehicleModel extends Model
         'model_name',
         'year_start',
         'year_end',
+        'image',
     ];
 
     protected function casts(): array

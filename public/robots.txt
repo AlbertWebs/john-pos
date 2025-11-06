@@ -1,2 +1,13 @@
 User-agent: *
-Disallow:
+Allow: /shop/
+Allow: /shop/products
+Allow: /shop/product/
+Allow: /shop/cart
+Allow: /shop/checkout
+Disallow: /admin/
+Disallow: /pos/
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /logout
+
+Sitemap: http://localhost:8000/sitemap.xml
