@@ -31,6 +31,7 @@ class SettingController extends Controller
             'email' => 'nullable|email|max:255',
             'admin_email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:20',
+            'website' => 'nullable|url|max:255',
             'address' => 'nullable|string|max:500',
             'paybill_number' => 'nullable|string|max:20',
             'till_number' => 'nullable|string|max:20',

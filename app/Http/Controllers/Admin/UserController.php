@@ -91,4 +91,47 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')
             ->with('success', "User {$user->name} has been created successfully.");
     }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => ['required', 'string', 'max:191', Rule::unique('users', 'username')->ignore($id)],
+            'pin' => ['nullable', 'string', 'size:4', 'regex:/^[0-9]{4}$/'],
+            'role' => ['required', 'string', Rule::in(['super_admin', 'cashier'])],
+            'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
+        ], [
+            'username.unique' => 'This username is already taken.',
+            'pin.size' => 'PIN must be exactly 4 digits.',
+            'pin.regex' => 'PIN must contain only numbers (0-9).',
+        ]);
+
+        $user->name = $request->name;
+        $user->username = $request->username;
+        $user->role = $request->role;
+        $user->status = $request->status;
+
+        // Only update PIN if provided
+        if ($request->filled('pin')) {
+            $user->pin = Hash::make($request->pin);
+        }
+
+        $user->save();
+
+        // Update role using Spatie if available
+        if (method_exists($user, 'syncRoles')) {
+            $user->syncRoles([$request->role]);
+        } elseif (method_exists($user, 'assignRole')) {
+            // Remove old roles and assign new one
+            if (method_exists($user, 'removeRole')) {
+                $user->removeRole($user->role);
+            }
+            $user->assignRole($request->role);
+        }
+
+        return redirect()->route('admin.users.index')
+            ->with('success', "User {$user->name} has been updated successfully.");
+    }
 }

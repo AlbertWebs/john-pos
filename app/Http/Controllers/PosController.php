@@ -18,9 +18,16 @@ class PosController extends Controller
         $query = Inventory::active()->where('stock_quantity', '>', 0);
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
+            
+            // For barcode searches, prioritize exact matches
             $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                // Exact matches first (for barcode scanning)
+                $q->where('barcode', '=', $search)
+                  ->orWhere('part_number', '=', $search)
+                  ->orWhere('sku', '=', $search)
+                  // Then partial matches
+                  ->orWhere('name', 'like', "%{$search}%")
                   ->orWhere('part_number', 'like', "%{$search}%")
                   ->orWhere('sku', 'like', "%{$search}%")
                   ->orWhere('barcode', 'like', "%{$search}%")
@@ -28,13 +35,14 @@ class PosController extends Controller
             });
         }
 
+        $searchTerm = $request->search ?? '';
         $items = $query->with(['category', 'brand', 'vehicleMake', 'vehicleModel', 'vehicleModels'])
             ->orderByRaw("CASE 
                 WHEN barcode = ? THEN 1 
                 WHEN part_number = ? THEN 2 
                 WHEN sku = ? THEN 3 
                 ELSE 4 
-            END", [$request->search ?? '', $request->search ?? '', $request->search ?? ''])
+            END", [$searchTerm, $searchTerm, $searchTerm])
             ->orderBy('name')
             ->limit(20)
             ->get()

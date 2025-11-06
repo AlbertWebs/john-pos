@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
         Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
         Route::get('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+        Route::put('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
         Route::post('/users/{id}/reset-pin', [\App\Http\Controllers\Admin\UserController::class, 'resetPin'])->name('users.reset-pin');
         Route::post('/users/{id}/unlock', [\App\Http\Controllers\Admin\UserController::class, 'unlockAccount'])->name('users.unlock');
         Route::post('/users/{id}/reset-attempts', [\App\Http\Controllers\Admin\UserController::class, 'resetAttempts'])->name('users.reset-attempts');

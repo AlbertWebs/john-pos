@@ -31,7 +31,7 @@
                                 <circle cx="12" cy="13" r="1.5" fill="currentColor"/>
                             </svg>
                         </div>
-                        <h1 class="text-lg font-bold text-white">Royal-POS </h1>
+                        <h1 class="text-lg font-bold text-white">Johlly-POS </h1>
                     </div>
                     <button 
                         @click="sidebarCollapsed = !sidebarCollapsed"

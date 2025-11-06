@@ -74,6 +74,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex space-x-2">
+                            <button onclick="showEditUserModal({{ $user->id }})" class="text-indigo-600 hover:text-indigo-900">Edit</button>
                             <button onclick="showResetPinModal({{ $user->id }}, '{{ $user->name }}')" class="text-blue-600 hover:text-blue-900">Reset PIN</button>
                             @if($user->isLocked())
                             <form action="{{ route('admin.users.unlock', $user->id) }}" method="POST" class="inline">
@@ -154,6 +155,68 @@
         </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Edit User</h3>
+                    <button onclick="closeEditUserModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <form id="editUserForm" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="user_id" id="edit_user_id">
+                    
+                    <div class="mb-4">
+                        <label for="edit_name" class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input type="text" name="name" id="edit_name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter full name">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="edit_username" class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                        <input type="text" name="username" id="edit_username" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter username">
+                        <p class="text-xs text-gray-500 mt-1">Must be unique</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="edit_pin" class="block text-sm font-medium text-gray-700 mb-2">PIN (4 digits)</label>
+                        <input type="text" name="pin" id="edit_pin" maxlength="4" minlength="4" pattern="[0-9]{4}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Leave blank to keep current PIN" inputmode="numeric">
+                        <p class="text-xs text-gray-500 mt-1">Enter exactly 4 digits (0-9) or leave blank to keep current PIN</p>
+                        <p class="text-xs text-red-500 mt-1" id="pinErrorEdit" style="display: none;">PIN must be exactly 4 digits</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="edit_role" class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                        <select name="role" id="edit_role" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Role</option>
+                            <option value="cashier">Cashier</option>
+                            <option value="super_admin">Super Admin</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="edit_status" class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                        <select name="status" id="edit_status" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Update User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Reset PIN Modal -->
     <div id="resetPinModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
@@ -193,6 +256,30 @@
 
         function closeAddUserModal() {
             document.getElementById('addUserModal').classList.add('hidden');
+        }
+
+        async function showEditUserModal(userId) {
+            try {
+                const response = await fetch(`/admin/users/${userId}`);
+                const user = await response.json();
+                
+                document.getElementById('edit_user_id').value = user.id;
+                document.getElementById('edit_name').value = user.name;
+                document.getElementById('edit_username').value = user.username;
+                document.getElementById('edit_pin').value = '';
+                document.getElementById('edit_role').value = user.role;
+                document.getElementById('edit_status').value = user.status;
+                document.getElementById('editUserForm').action = `/admin/users/${userId}`;
+                document.getElementById('editUserModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                alert('Failed to load user data. Please try again.');
+            }
+        }
+
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').classList.add('hidden');
+            document.getElementById('editUserForm').reset();
         }
 
         function showResetPinModal(userId, userName) {
@@ -269,6 +356,41 @@
                     e.preventDefault();
                     pinErrorAdd.style.display = 'block';
                     pinInputAdd.focus();
+                    return false;
+                }
+            });
+        }
+
+        // Validate PIN input for edit user modal
+        const pinInputEdit = document.getElementById('edit_pin');
+        const pinErrorEdit = document.getElementById('pinErrorEdit');
+        const editUserForm = document.getElementById('editUserForm');
+        
+        if (pinInputEdit) {
+            pinInputEdit.addEventListener('input', function(e) {
+                // Remove any non-numeric characters
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                // Limit to 4 digits
+                if (this.value.length > 4) {
+                    this.value = this.value.slice(0, 4);
+                }
+                
+                // Show/hide error message (only if user entered something)
+                if (this.value.length > 0 && this.value.length !== 4) {
+                    pinErrorEdit.style.display = 'block';
+                } else {
+                    pinErrorEdit.style.display = 'none';
+                }
+            });
+            
+            // Validate on form submit (only if PIN is provided)
+            editUserForm?.addEventListener('submit', function(e) {
+                const pinValue = pinInputEdit.value.trim();
+                if (pinValue.length > 0 && pinValue.length !== 4) {
+                    e.preventDefault();
+                    pinErrorEdit.style.display = 'block';
+                    pinInputEdit.focus();
                     return false;
                 }
             });

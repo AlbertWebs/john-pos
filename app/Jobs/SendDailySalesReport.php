@@ -28,10 +28,13 @@ class SendDailySalesReport implements ShouldQueue
             return;
         }
 
-        // Get yesterday's sales (or previous day if run in morning)
-        $reportDate = Carbon::yesterday();
+        // Get yesterday's sales (previous day's sales)
+        // If run at 9 AM, this will get yesterday's complete sales
+        $reportDate = Carbon::yesterday()->startOfDay();
+        $endDate = Carbon::yesterday()->endOfDay();
+        
         $sales = Sale::with(['customer', 'user', 'saleItems.part', 'payments'])
-            ->whereDate('date', $reportDate)
+            ->whereBetween('date', [$reportDate, $endDate])
             ->orderBy('date', 'desc')
             ->get();
 

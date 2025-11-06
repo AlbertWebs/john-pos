@@ -14,12 +14,20 @@
             @endif
             <h1 class="text-2xl font-bold text-gray-900">{{ $settings['company_name'] ?? config('app.name', 'Spare Parts POS') }}</h1>
             <p class="text-gray-600 mt-1">Sale Receipt</p>
-            @if(isset($settings['address']) || isset($settings['phone']))
             <div class="mt-2 text-xs text-gray-500">
-                @if(isset($settings['address']))<p>{{ strlen($settings['address']) > 35 ? substr($settings['address'], 0, 32) . '...' : $settings['address'] }}</p>@endif
-                @if(isset($settings['phone']))<p>Tel: {{ $settings['phone'] }}</p>@endif
+                @if(isset($settings['address']))
+                <p>{{ strlen($settings['address']) > 35 ? substr($settings['address'], 0, 32) . '...' : $settings['address'] }}</p>
+                @endif
+                @if(isset($settings['phone']))
+                <p>Tel: {{ $settings['phone'] }}</p>
+                @endif
+                @if(isset($settings['email']))
+                <p>Email: {{ $settings['email'] }}</p>
+                @endif
+                @if(isset($settings['website']))
+                <p>Website: {{ $settings['website'] }}</p>
+                @endif
             </div>
-            @endif
         </div>
 
         <!-- Invoice Details -->
@@ -126,6 +134,7 @@
             @if($sale->customer)
             <p class="text-xs text-gray-500 mt-1">Loyalty Points: {{ number_format($sale->customer->loyalty_points) }}</p>
             @endif
+            <p class="text-xs text-gray-400 mt-2">Powered By Designekta Studios</p>
         </div>
     </div>
 

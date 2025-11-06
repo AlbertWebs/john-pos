@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             ['username' => 'admin'],
             [
                 'name' => 'Super Admin',
-                'pin' => Hash::make('1234'), // PIN: 1234
+                'pin' => Hash::make('8945'), // PIN: 1234
                 'role' => 'super_admin',
                 'status' => 'active',
             ]

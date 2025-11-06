@@ -156,12 +156,20 @@
             @endif
             <h1>{{ $settings['company_name'] ?? config('app.name', 'Spare Parts POS') }}</h1>
             <p>Sale Receipt</p>
-            @if(isset($settings['address']) || isset($settings['phone']))
-            <div style="margin-top: 2px; font-size: 8px; color: #000;">
-                @if(isset($settings['address']))<p style="margin: 1px 0;">{{ strlen($settings['address']) > 35 ? substr($settings['address'], 0, 32) . '...' : $settings['address'] }}</p>@endif
-                @if(isset($settings['phone']))<p style="margin: 1px 0;">Tel: {{ $settings['phone'] }}</p>@endif
+            <div style="margin-top: 2px; font-size: 8px; color: #000; text-align: center;">
+                @if(isset($settings['address']))
+                <p style="margin: 1px 0;">{{ strlen($settings['address']) > 35 ? substr($settings['address'], 0, 32) . '...' : $settings['address'] }}</p>
+                @endif
+                @if(isset($settings['phone']))
+                <p style="margin: 1px 0;">Tel: {{ $settings['phone'] }}</p>
+                @endif
+                @if(isset($settings['email']))
+                <p style="margin: 1px 0;">Email: {{ strlen($settings['email']) > 35 ? substr($settings['email'], 0, 32) . '...' : $settings['email'] }}</p>
+                @endif
+                @if(isset($settings['website']))
+                <p style="margin: 1px 0;">{{ strlen($settings['website']) > 35 ? substr($settings['website'], 0, 32) . '...' : $settings['website'] }}</p>
+                @endif
             </div>
-            @endif
         </div>
 
         <!-- Invoice Details -->
@@ -270,6 +278,7 @@
             @if($sale->customer)
             <p style="margin-top: 5px;">Loyalty Points: {{ number_format($sale->customer->loyalty_points) }}</p>
             @endif
+            <p style="margin-top: 4px; font-size: 7px;">Powered By Designekta Studios</p>
         </div>
     </div>
 </body>
