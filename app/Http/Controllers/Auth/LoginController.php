@@ -31,10 +31,34 @@ class LoginController extends Controller
 
         $user = User::where('username', $request->username)->first();
 
-        if (!$user || !$user->verifyPin($request->pin)) {
+        // Check if account is locked
+        if ($user && $user->isLocked()) {
+            $remainingTime = $user->getRemainingLockTime();
             throw ValidationException::withMessages([
-                'username' => ['The provided credentials are incorrect.'],
+                'username' => ["Your account is locked due to too many failed login attempts. Please try again {$remainingTime}."],
             ]);
+        }
+
+        if (!$user || !$user->verifyPin($request->pin)) {
+            if ($user) {
+                $user->incrementLoginAttempts();
+                
+                $remainingAttempts = 3 - $user->login_attempts;
+                if ($remainingAttempts > 0) {
+                    throw ValidationException::withMessages([
+                        'username' => ["The provided credentials are incorrect. {$remainingAttempts} attempt(s) remaining."],
+                    ]);
+                } else {
+                    $remainingTime = $user->getRemainingLockTime();
+                    throw ValidationException::withMessages([
+                        'username' => ["Too many failed login attempts. Your account has been locked. Please try again {$remainingTime}."],
+                    ]);
+                }
+            } else {
+                throw ValidationException::withMessages([
+                    'username' => ['The provided credentials are incorrect.'],
+                ]);
+            }
         }
 
         if (!$user->isActive()) {
@@ -42,6 +66,9 @@ class LoginController extends Controller
                 'username' => ['Your account is inactive. Please contact administrator.'],
             ]);
         }
+
+        // Reset login attempts on successful login
+        $user->resetLoginAttempts();
 
         Auth::login($user, $request->boolean('remember'));
 

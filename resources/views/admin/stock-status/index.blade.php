@@ -4,10 +4,35 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">Stock Status</h1>
-        <p class="text-gray-600 mt-1">Monitor inventory levels and stock status</p>
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Stock Status</h1>
+            <p class="text-gray-600 mt-1">Monitor inventory levels and stock status</p>
+        </div>
+        <form action="{{ route('admin.stock-status.send-email') }}" method="POST" class="inline">
+            @csrf
+            <input type="hidden" name="low_stock_only" value="{{ request('low_stock_only', '0') }}">
+            <input type="hidden" name="category_id" value="{{ request('category_id', '') }}">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                Send Stock Status Email
+            </button>
+        </form>
     </div>
+
+    @if(session('success'))
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {{ session('success') }}
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {{ session('error') }}
+    </div>
+    @endif
 
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">

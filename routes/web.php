@@ -117,7 +117,14 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/sales-reports', [\App\Http\Controllers\Admin\SalesReportLogController::class, 'index'])->name('sales-reports.index');
         Route::get('/stock-status', [\App\Http\Controllers\Admin\StockStatusController::class, 'index'])->name('stock-status.index');
+        Route::post('/stock-status/send-email', [\App\Http\Controllers\Admin\StockStatusController::class, 'sendEmail'])->name('stock-status.send-email');
         Route::resource('seo-settings', \App\Http\Controllers\Admin\SeoSettingsController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+        Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+        Route::post('/users/{id}/reset-pin', [\App\Http\Controllers\Admin\UserController::class, 'resetPin'])->name('users.reset-pin');
+        Route::post('/users/{id}/unlock', [\App\Http\Controllers\Admin\UserController::class, 'unlockAccount'])->name('users.unlock');
+        Route::post('/users/{id}/reset-attempts', [\App\Http\Controllers\Admin\UserController::class, 'resetAttempts'])->name('users.reset-attempts');
     });
     
     // M-Pesa (STK Push and status check require authentication)

@@ -18,6 +18,9 @@ class User extends Authenticatable
         'pin',
         'role',
         'status',
+        'login_attempts',
+        'locked_until',
+        'last_login_attempt',
     ];
 
     protected $hidden = [
@@ -29,6 +32,8 @@ class User extends Authenticatable
     {
         return [
             'pin' => 'hashed',
+            'locked_until' => 'datetime',
+            'last_login_attempt' => 'datetime',
         ];
     }
 
@@ -53,6 +58,40 @@ class User extends Authenticatable
     public function isCashier()
     {
         return $this->role === 'cashier';
+    }
+
+    public function isLocked()
+    {
+        return $this->locked_until && $this->locked_until->isFuture();
+    }
+
+    public function incrementLoginAttempts()
+    {
+        $this->login_attempts = ($this->login_attempts ?? 0) + 1;
+        $this->last_login_attempt = now();
+        
+        // Lock account after 3 failed attempts for 30 minutes
+        if ($this->login_attempts >= 3) {
+            $this->locked_until = now()->addMinutes(30);
+        }
+        
+        $this->save();
+    }
+
+    public function resetLoginAttempts()
+    {
+        $this->login_attempts = 0;
+        $this->locked_until = null;
+        $this->save();
+    }
+
+    public function getRemainingLockTime()
+    {
+        if (!$this->isLocked()) {
+            return null;
+        }
+        
+        return $this->locked_until->diffForHumans();
     }
 
     // Relationships
