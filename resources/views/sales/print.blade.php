@@ -15,10 +15,12 @@
             font-family: 'Courier New', Courier, monospace;
             font-size: 9px;
             line-height: 1.2;
-            color: #000;
+            color: #000000 !important;
             margin: 0;
             padding: 0;
             background: #f5f5f5;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         
         .print-container {
@@ -70,20 +72,23 @@
         .header {
             text-align: center;
             margin-bottom: 4px;
-            border-bottom: 1px solid #000;
+            border-bottom: 2px solid #000000;
             padding-bottom: 4px;
         }
         
         .header h1 {
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 900;
             margin-bottom: 2px;
             line-height: 1.1;
+            color: #000000 !important;
         }
         
         .header p {
             font-size: 9px;
             margin: 1px 0;
+            font-weight: 600;
+            color: #000000 !important;
         }
         
         .header img {
@@ -95,7 +100,7 @@
         .details {
             margin-bottom: 4px;
             padding-bottom: 4px;
-            border-bottom: 1px dashed #000;
+            border-bottom: 1px solid #000000;
             font-size: 8px;
         }
         
@@ -106,13 +111,16 @@
         }
         
         .label {
-            font-weight: bold;
+            font-weight: 800;
             font-size: 7px;
             text-transform: uppercase;
+            color: #000000 !important;
         }
         
         .value {
             font-size: 8px;
+            font-weight: 600;
+            color: #000000 !important;
         }
         
         table {
@@ -126,9 +134,10 @@
             text-align: left;
             padding: 1px;
             font-size: 7px;
-            font-weight: bold;
+            font-weight: 900;
             text-transform: uppercase;
-            border-bottom: 1px solid #000;
+            border-bottom: 2px solid #000000;
+            color: #000000 !important;
         }
         
         th.right {
@@ -137,9 +146,11 @@
         
         td {
             padding: 1px;
-            border-bottom: 1px dotted #000;
+            border-bottom: 1px solid #000000;
             font-size: 8px;
             line-height: 1.1;
+            font-weight: 600;
+            color: #000000 !important;
         }
         
         td.right {
@@ -149,17 +160,20 @@
         .item-name {
             font-size: 8px;
             margin-bottom: 1px;
+            font-weight: 700;
+            color: #000000 !important;
         }
         
         .item-part {
             font-size: 7px;
-            color: #666;
+            color: #000000 !important;
+            font-weight: 500;
         }
         
         .totals {
             margin-top: 4px;
             padding-top: 4px;
-            border-top: 1px dashed #000;
+            border-top: 1px solid #000000;
         }
         
         .total-row {
@@ -167,28 +181,48 @@
             justify-content: space-between;
             padding: 2px 0;
             font-size: 8px;
+            font-weight: 700;
+            color: #000000 !important;
         }
         
         .total-row.final {
-            border-top: 1px solid #000;
-            font-weight: bold;
+            border-top: 2px solid #000000;
+            font-weight: 900;
             font-size: 10px;
             margin-top: 2px;
             padding-top: 2px;
+            color: #000000 !important;
         }
         
         .payment-info {
             margin-top: 4px;
             padding-top: 4px;
-            border-top: 1px dashed #000;
+            border-top: 1px solid #000000;
+        }
+        
+        .payment-info .label {
+            font-weight: 800;
+            color: #000000 !important;
+        }
+        
+        .payment-info .total-row {
+            font-weight: 700;
+            color: #000000 !important;
         }
         
         .footer {
             margin-top: 4px;
             text-align: center;
             padding-top: 4px;
-            border-top: 1px dashed #000;
+            border-top: 1px solid #000000;
             font-size: 8px;
+            font-weight: 600;
+            color: #000000 !important;
+        }
+        
+        .footer p {
+            font-weight: 600;
+            color: #000000 !important;
         }
         
         /* Print Styles */
@@ -354,12 +388,12 @@
     </div>
     
     <script>
-        // Auto-print on page load (optional - can be disabled)
-        // window.addEventListener('load', function() {
-        //     setTimeout(function() {
-        //         window.print();
-        //     }, 500);
-        // });
+        // Auto-print on page load when opened from POS
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
     </script>
 </body>
 </html>

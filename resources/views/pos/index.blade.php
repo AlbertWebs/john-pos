@@ -64,7 +64,36 @@
     }
 </style>
 <div class="pos-container h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50" x-data="posInterface()">
-   
+    <!-- Notification Toasts -->
+    <div class="fixed top-4 right-4 z-50 space-y-2" style="max-width: 400px;">
+        <template x-for="notification in notifications" :key="notification.id">
+            <div 
+                x-show="notifications.find(n => n.id === notification.id)"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform translate-x-full"
+                x-transition:enter-end="opacity-100 transform translate-x-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform translate-x-0"
+                x-transition:leave-end="opacity-0 transform translate-x-full"
+                :class="{
+                    'bg-red-500': notification.type === 'error',
+                    'bg-green-500': notification.type === 'success',
+                    'bg-yellow-500': notification.type === 'warning'
+                }"
+                class="text-white px-6 py-4 rounded-lg shadow-lg flex items-center justify-between gap-4"
+            >
+                <p class="flex-1 font-medium" x-text="notification.message"></p>
+                <button 
+                    @click="removeNotification(notification.id)"
+                    class="text-white hover:text-gray-200 transition"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </template>
+    </div>
 
     <div class="flex-1 flex overflow-hidden">
         <!-- Left Panel - Product Search & Selection -->
@@ -670,6 +699,66 @@
             </form>
         </div>
     </div>
+
+    <!-- Success Modal -->
+    <div 
+        x-show="showSuccessModal"
+        x-cloak
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        @click.self="closeSuccessModal()"
+        @keydown.escape.window="closeSuccessModal()"
+    >
+        <div 
+            class="bg-white rounded-lg shadow-xl max-w-md w-full p-6" 
+            @click.stop
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 transform scale-95"
+            x-transition:enter-end="opacity-100 transform scale-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 transform scale-100"
+            x-transition:leave-end="opacity-0 transform scale-95"
+        >
+            <div class="text-center">
+                <!-- Success Icon -->
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                    <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Sale Completed!</h2>
+                <p class="text-gray-600 mb-1" x-show="completedSaleInvoice">
+                    Invoice: <span class="font-semibold" x-text="completedSaleInvoice"></span>
+                </p>
+                <p class="text-sm text-gray-500 mb-6">The receipt print dialog will open automatically. You can continue working below.</p>
+                
+                <!-- Buttons -->
+                <div class="flex gap-3">
+                    <button 
+                        @click="printReceipt()"
+                        class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition transform hover:scale-105 flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        </svg>
+                        Print Receipt
+                    </button>
+                    <button 
+                        @click="closeSuccessModal()"
+                        class="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition"
+                    >
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -707,6 +796,10 @@ function posInterface() {
         loadingPendingPayments: false,
         showCompatibility: false,
         compatibilityProduct: null,
+        notifications: [],
+        showSuccessModal: false,
+        completedSaleId: null,
+        completedSaleInvoice: null,
 
         cartTotal: {
             subtotal: 0,
@@ -897,7 +990,7 @@ function posInterface() {
                 if (product) {
                     // Check if product is in stock
                     if (product.stock_quantity <= 0) {
-                        alert(`${product.name} is out of stock`);
+                        this.showNotification(`${product.name} is out of stock`, 'error');
                         this.barcodeQuery = '';
                         this.$refs.barcodeInput?.focus();
                         return;
@@ -917,16 +1010,16 @@ function posInterface() {
                     if (data.length > 0) {
                         this.products = data;
                         this.searchQuery = barcode;
-                        alert(`Found ${data.length} product(s) matching "${barcode}". Please select from the list.`);
+                        this.showNotification(`Found ${data.length} product(s) matching "${barcode}". Please select from the list.`, 'warning');
                     } else {
-                        alert(`No product found with barcode "${barcode}"`);
+                        this.showNotification(`No product found with barcode "${barcode}"`, 'error');
                         this.barcodeQuery = '';
                         this.$refs.barcodeInput?.focus();
                     }
                 }
             } catch (error) {
                 console.error('Barcode search error:', error);
-                alert('Error searching for barcode. Please try again.');
+                this.showNotification('Error searching for barcode. Please try again.', 'error');
             } finally {
                 this.scanningBarcode = false;
             }
@@ -934,7 +1027,7 @@ function posInterface() {
 
         addToCart(product) {
             if (product.stock_quantity <= 0) {
-                alert('This item is out of stock');
+                this.showNotification('This item is out of stock', 'error');
                 return;
             }
 
@@ -944,7 +1037,7 @@ function posInterface() {
                 if (this.cart[existingIndex].quantity < product.stock_quantity) {
                     this.cart[existingIndex].quantity++;
                 } else {
-                    alert('Cannot add more. Stock limit reached.');
+                    this.showNotification('Cannot add more. Stock limit reached.', 'error');
                 }
             } else {
                 this.cart.push({
@@ -972,7 +1065,7 @@ function posInterface() {
             
             if (newQuantity < 1) return;
             if (newQuantity > item.stock_quantity) {
-                alert('Cannot exceed available stock');
+                this.showNotification('Cannot exceed available stock', 'error');
                 return;
             }
             
@@ -987,7 +1080,7 @@ function posInterface() {
             }
             if (item.quantity > item.stock_quantity) {
                 item.quantity = item.stock_quantity;
-                alert('Quantity adjusted to available stock');
+                this.showNotification('Quantity adjusted to available stock', 'warning');
             }
             this.calculateTotal();
         },
@@ -998,7 +1091,7 @@ function posInterface() {
             const minPrice = Number(item.min_price);
             
             if (isNaN(price) || price < minPrice) {
-                alert(`Price cannot be below minimum price of KES ${this.formatPrice(item.min_price)}. Price will be set to minimum.`);
+                this.showNotification(`Price cannot be below minimum price of KES ${this.formatPrice(item.min_price)}. Price will be set to minimum.`, 'warning');
                 item.price = minPrice;
             } else {
                 // Ensure price is stored as a number
@@ -1014,9 +1107,88 @@ function posInterface() {
             this.cartTotal.total = this.cartTotal.subtotal + this.cartTotal.tax - this.cartTotal.discount;
         },
 
+        showNotification(message, type = 'error') {
+            const notification = {
+                id: Date.now(),
+                message: message,
+                type: type, // 'error', 'success', 'warning'
+            };
+            this.notifications.push(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                this.removeNotification(notification.id);
+            }, 5000);
+        },
+        
+        removeNotification(id) {
+            this.notifications = this.notifications.filter(n => n.id !== id);
+        },
+        
+        printReceipt() {
+            if (this.completedSaleId) {
+                const printUrl = `/sales/${this.completedSaleId}/print`;
+                // Create a hidden iframe for printing
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                iframe.src = printUrl;
+                
+                document.body.appendChild(iframe);
+                
+                // Wait for iframe to load, then trigger print
+                iframe.onload = function() {
+                    setTimeout(() => {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                        // Remove iframe after printing
+                        setTimeout(() => {
+                            document.body.removeChild(iframe);
+                        }, 1000);
+                    }, 500);
+                };
+            }
+        },
+        
+        closeSuccessModal() {
+            this.showSuccessModal = false;
+            this.completedSaleId = null;
+            this.completedSaleInvoice = null;
+        },
+        
+        resetForm() {
+            this.cart = [];
+            this.selectedCustomer = null;
+            this.customerSearch = '';
+            this.paymentMethod = 'Cash';
+            this.mpesaPhoneNumber = '';
+            this.transactionReference = '';
+            this.selectedPendingPayment = null;
+            this.pendingPaymentSearch = '';
+            this.tax = 0;
+            this.discount = 0;
+            this.calculateTotal();
+            
+            // Reload pending payments to refresh the list
+            this.loadPendingPayments();
+            
+            // Refocus barcode input
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    if (this.$refs.barcodeInput) {
+                        this.$refs.barcodeInput.focus();
+                    }
+                }, 100);
+            });
+        },
+
         async checkout() {
             if (this.cart.length === 0) {
-                alert('Cart is empty');
+                this.showNotification('Cart is empty', 'error');
                 return;
             }
 
@@ -1026,17 +1198,17 @@ function posInterface() {
                 const minPrice = Number(item.min_price);
                 
                 if (isNaN(price) || price < minPrice) {
-                    alert(`${item.name}: Price below minimum (KES ${this.formatPrice(item.min_price)})`);
+                    this.showNotification(`${item.name}: Price below minimum (KES ${this.formatPrice(item.min_price)})`, 'error');
                     return;
                 }
                 if (item.quantity > item.stock_quantity) {
-                    alert(`${item.name}: Insufficient stock`);
+                    this.showNotification(`${item.name}: Insufficient stock`, 'error');
                     return;
                 }
             }
 
             if (!this.paymentMethod) {
-                alert('Please select a payment method');
+                this.showNotification('Please select a payment method', 'error');
                 return;
             }
 
@@ -1052,7 +1224,7 @@ function posInterface() {
                     }
                 } else if (!this.transactionReference) {
                     // If no C2B payment selected and no STK reference, require one
-                    alert('Please select a C2B payment or initiate STK Push');
+                    this.showNotification('Please select a C2B payment or initiate STK Push', 'error');
                     return;
                 }
             }
@@ -1106,23 +1278,35 @@ function posInterface() {
                             if (!allocateData.success) {
                                 console.warn('C2B allocation failed:', allocateData.message);
                                 // Sale was created, but allocation failed - show warning
-                                alert(`Sale created successfully, but payment allocation failed: ${allocateData.message}. Please allocate manually from pending payments.`);
+                                this.showNotification(`Sale created successfully, but payment allocation failed: ${allocateData.message}. Please allocate manually from pending payments.`, 'warning');
                             }
                         } catch (error) {
                             console.error('Allocation error:', error);
                             // Sale was created, but allocation failed - show warning
-                            alert('Sale created successfully, but payment allocation failed. Please allocate manually from pending payments.');
+                            this.showNotification('Sale created successfully, but payment allocation failed. Please allocate manually from pending payments.', 'warning');
                         }
                     }
                     
-                    // Redirect to receipt
-                    window.location.href = saleData.redirect_url;
+                    // Store sale info for modal
+                    this.completedSaleId = saleData.sale_id;
+                    this.completedSaleInvoice = saleData.invoice_number;
+                    
+                    // Reset form
+                    this.resetForm();
+                    
+                    // Show success modal
+                    this.showSuccessModal = true;
+                    
+                    // Auto-open print dialog after a short delay (using iframe - no new page)
+                    setTimeout(() => {
+                        this.printReceipt();
+                    }, 800);
                 } else {
-                    alert(saleData.message || 'Checkout failed');
+                    this.showNotification(saleData.message || 'Checkout failed', 'error');
                 }
             } catch (error) {
                 console.error('Checkout error:', error);
-                alert('An error occurred during checkout');
+                this.showNotification('An error occurred during checkout', 'error');
             } finally {
                 this.processing = false;
             }
@@ -1230,12 +1414,12 @@ function posInterface() {
 
         async initiateSTKPush() {
             if (!this.mpesaPhoneNumber || this.mpesaPhoneNumber.length < 10) {
-                alert('Please enter a valid phone number');
+                this.showNotification('Please enter a valid phone number', 'error');
                 return;
             }
 
             if (this.cart.length === 0) {
-                alert('Cart is empty');
+                this.showNotification('Cart is empty', 'error');
                 return;
             }
 
@@ -1260,18 +1444,18 @@ function posInterface() {
 
                 if (data.success) {
                     this.transactionReference = data.checkout_request_id;
-                    alert(data.customer_message || 'STK Push initiated. Please check your phone.');
+                    this.showNotification(data.customer_message || 'STK Push initiated. Please check your phone.', 'success');
                     
                     // Poll for payment status
                     this.checkPaymentStatus(data.checkout_request_id);
                 } else {
                     // Show detailed error message
                     const errorMsg = data.error || data.message || 'Failed to initiate STK Push';
-                    alert('Error: ' + errorMsg + '\n\n' + (data.message || 'Please check your M-Pesa configuration.'));
+                    this.showNotification('Error: ' + errorMsg + '. Please check your M-Pesa configuration.', 'error');
                 }
             } catch (error) {
                 console.error('STK Push error:', error);
-                alert('Failed to initiate STK Push. Please check your internet connection and M-Pesa configuration.');
+                this.showNotification('Failed to initiate STK Push. Please check your internet connection and M-Pesa configuration.', 'error');
             } finally {
                 this.processingSTK = false;
             }
@@ -1303,16 +1487,16 @@ function posInterface() {
                         // Payment successful
                         clearInterval(pollInterval);
                         this.transactionReference = data.MpesaReceiptNumber || checkoutRequestId;
-                        alert('Payment confirmed! Transaction: ' + (data.MpesaReceiptNumber || checkoutRequestId));
+                        this.showNotification('Payment confirmed! Transaction: ' + (data.MpesaReceiptNumber || checkoutRequestId), 'success');
                     } else if (data.ResultCode && data.ResultCode != 1032) {
                         // Payment failed (1032 is still processing)
                         clearInterval(pollInterval);
-                        alert('Payment failed: ' + (data.ResultDesc || 'Unknown error'));
+                        this.showNotification('Payment failed: ' + (data.ResultDesc || 'Unknown error'), 'error');
                     }
 
                     if (attempts >= maxAttempts) {
                         clearInterval(pollInterval);
-                        alert('Payment confirmation timeout. Please verify payment manually.');
+                        this.showNotification('Payment confirmation timeout. Please verify payment manually.', 'warning');
                     }
                 } catch (error) {
                     console.error('Status check error:', error);
