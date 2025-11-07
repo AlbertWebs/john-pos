@@ -103,4 +103,30 @@ class Inventory extends Model
     {
         return $this->stock_quantity <= $this->reorder_level;
     }
+
+    public static function generateSku(array $data): string
+    {
+        $categoryPrefix = '';
+        if (!empty($data['category_id'])) {
+            $category = Category::find($data['category_id']);
+            if ($category) {
+                $cleanedName = preg_replace('/[^A-Za-z0-9]/', '', $category->name);
+                $categoryPrefix = strtoupper(substr($cleanedName, 0, 3));
+            }
+        }
+
+        $partNumberBase = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $data['part_number'] ?? ''));
+        $timestamp = now()->format('Ymd');
+
+        $sku = ($categoryPrefix ? $categoryPrefix . '-' : '') . ($partNumberBase ?: 'ITEM') . '-' . $timestamp;
+
+        $counter = 1;
+        $originalSku = $sku;
+        while (self::where('sku', $sku)->exists()) {
+            $sku = $originalSku . '-' . $counter;
+            $counter++;
+        }
+
+        return $sku;
+    }
 }

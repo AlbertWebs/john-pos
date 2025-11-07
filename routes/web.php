@@ -52,6 +52,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     // Inventory Management
+    Route::get('/inventory/import', [InventoryController::class, 'showImportForm'])
+        ->name('inventory.import.form');
+    Route::post('/inventory/import', [InventoryController::class, 'import'])
+        ->name('inventory.import');
+    Route::get('/inventory/template', [InventoryController::class, 'downloadTemplate'])
+        ->name('inventory.template');
     Route::resource('inventory', InventoryController::class);
     Route::get('/inventory/ajax/vehicle-models', [InventoryController::class, 'getVehicleModels'])
         ->name('inventory.getVehicleModels');

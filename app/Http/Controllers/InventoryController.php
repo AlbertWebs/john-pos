@@ -7,9 +7,12 @@ use App\Models\Category;
 use App\Models\Brand;
 use App\Models\VehicleMake;
 use App\Models\VehicleModel;
+use App\Imports\InventoryImport;
+use App\Exports\InventoryTemplateExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InventoryController extends Controller
 {
@@ -117,7 +120,11 @@ class InventoryController extends Controller
 
         // Auto-generate SKU if not provided
         if (empty($validated['sku'])) {
-            $validated['sku'] = $this->generateSKU($validated);
+            $validated['sku'] = Inventory::generateSku($validated);
+        }
+
+        if (empty($validated['location'])) {
+            $validated['location'] = 'Shef';
         }
 
         $inventory = Inventory::create($validated);
@@ -194,7 +201,11 @@ class InventoryController extends Controller
 
         // Auto-generate SKU if not provided or if it's empty
         if (empty($validated['sku']) || !isset($validated['sku'])) {
-            $validated['sku'] = $this->generateSKU($validated);
+            $validated['sku'] = Inventory::generateSku($validated);
+        }
+
+        if (array_key_exists('location', $validated) && empty($validated['location'])) {
+            $validated['location'] = 'Shef';
         }
 
         // Track price changes
@@ -281,38 +292,59 @@ class InventoryController extends Controller
         }
     }
 
-    /**
-     * Generate a unique SKU based on item details
-     */
-    private function generateSKU(array $data): string
+    public function showImportForm()
     {
-        // Generate SKU: Category prefix + Part Number + Timestamp suffix
-        $categoryPrefix = '';
-        if (!empty($data['category_id'])) {
-            $category = Category::find($data['category_id']);
-            if ($category) {
-                $categoryPrefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $category->name), 0, 3));
-            }
+        return view('inventory.import', [
+            'summary' => session('import_summary'),
+        ]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $import = new InventoryImport();
+
+        try {
+            Excel::import($import, $request->file('file'));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'file' => 'Failed to process the uploaded file. Please ensure it is a valid Excel document.',
+                ]);
         }
-        
-        // Use part number as base (remove special chars, uppercase)
-        $partNumberBase = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $data['part_number'] ?? ''));
-        
-        // Add timestamp suffix to ensure uniqueness
-        $timestamp = now()->format('Ymd');
-        
-        // Combine: CAT-PART-TIMESTAMP
-        $sku = ($categoryPrefix ? $categoryPrefix . '-' : '') . ($partNumberBase ?: 'ITEM') . '-' . $timestamp;
-        
-        // Ensure uniqueness by checking database
-        $counter = 1;
-        $originalSku = $sku;
-        while (Inventory::where('sku', $sku)->exists()) {
-            $sku = $originalSku . '-' . $counter;
-            $counter++;
+
+        $summary = $import->summary;
+
+        $messageParts = [
+            $summary['created'] . ' created',
+            $summary['updated'] . ' updated',
+        ];
+
+        if ($summary['skipped'] > 0) {
+            $messageParts[] = $summary['skipped'] . ' skipped';
         }
-        
-        return $sku;
+
+        if (count($summary['errors']) > 0) {
+            $messageParts[] = count($summary['errors']) . ' issue(s) to review';
+        }
+
+        return redirect()
+            ->route('inventory.import.form')
+            ->with('success', 'Inventory import complete: ' . implode(', ', $messageParts) . '.')
+            ->with('import_summary', $summary);
+    }
+
+    public function downloadTemplate()
+    {
+        $fileName = 'inventory-import-template-' . now()->format('Y-m-d') . '.xlsx';
+
+        return Excel::download(new InventoryTemplateExport(), $fileName);
     }
 
     /**
