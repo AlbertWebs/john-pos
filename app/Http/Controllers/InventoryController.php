@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
 {
@@ -357,5 +358,51 @@ class InventoryController extends Controller
             ->get(['id', 'model_name', 'year_start', 'year_end']);
 
         return response()->json($models);
+    }
+
+    public function checkUnique(Request $request)
+    {
+        $validated = $request->validate([
+            'field' => ['required', Rule::in(['part_number', 'barcode'])],
+            'value' => ['nullable', 'string', 'max:255'],
+            'ignore_id' => ['nullable', 'integer'],
+        ]);
+
+        $value = trim($validated['value'] ?? '');
+        $label = $validated['field'] === 'part_number' ? 'Part number' : 'Barcode';
+
+        if ($value === '') {
+            return response()->json([
+                'exists' => false,
+                'message' => "Enter a {$label} to check.",
+            ]);
+        }
+
+        $query = Inventory::query()
+            ->where($validated['field'], $value);
+
+        if (!empty($validated['ignore_id'])) {
+            $query->where('id', '!=', $validated['ignore_id']);
+        }
+
+        $existing = $query->first(['id', 'name', 'part_number', 'barcode']);
+
+        return response()->json([
+            'exists' => (bool) $existing,
+            'message' => $existing
+                ? sprintf(
+                    '%s already belongs to %s (ID #%d).',
+                    $label,
+                    $existing->name ?? 'another inventory item',
+                    $existing->id
+                )
+                : sprintf('%s is available and has not been used yet.', $label),
+            'item' => $existing ? [
+                'id' => $existing->id,
+                'name' => $existing->name,
+                'part_number' => $existing->part_number,
+                'barcode' => $existing->barcode,
+            ] : null,
+        ]);
     }
 }

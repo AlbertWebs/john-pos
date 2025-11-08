@@ -58,6 +58,8 @@ Route::middleware('auth')->group(function () {
         ->name('inventory.import');
     Route::get('/inventory/template', [InventoryController::class, 'downloadTemplate'])
         ->name('inventory.template');
+    Route::get('/inventory/check-unique', [InventoryController::class, 'checkUnique'])
+        ->name('inventory.checkUnique');
     Route::resource('inventory', InventoryController::class);
     Route::get('/inventory/ajax/vehicle-models', [InventoryController::class, 'getVehicleModels'])
         ->name('inventory.getVehicleModels');

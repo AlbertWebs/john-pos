@@ -16,7 +16,14 @@
     </div>
 
     <div class="bg-white rounded-lg shadow-md p-8">
-        <form method="POST" action="{{ route('inventory.update', $inventory) }}" x-data="inventoryForm()">
+        <form method="POST" action="{{ route('inventory.update', $inventory) }}" x-data='inventoryForm({
+            inventoryId: @json($inventory->id),
+            initialPartNumber: @json(old("part_number", $inventory->part_number)),
+            initialBarcode: @json(old("barcode", $inventory->barcode)),
+            checkUrl: @json(route("inventory.checkUnique")),
+            editUrlTemplate: @json(route("inventory.edit", "__ID__")),
+            redirectOnDuplicate: false
+        })'>
             @csrf
             @method('PUT')
 
@@ -33,6 +40,9 @@
                             type="text" 
                             name="part_number" 
                             id="part_number"
+                            x-model="partNumber"
+                            @input.debounce.400ms="checkPartNumber()"
+                            @blur="checkPartNumber(true)"
                             value="{{ old('part_number', $inventory->part_number) }}"
                             required
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('part_number') border-red-500 @enderror"
@@ -40,6 +50,31 @@
                         @error('part_number')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                        <div class="mt-1 text-sm" x-cloak>
+                            <p x-show="checkingPartNumber" class="text-blue-600 flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                Checking availability...
+                            </p>
+                            <p x-show="!checkingPartNumber && partNumberState === 'available'" class="text-green-600 flex items-center gap-2">
+                                <span>✓</span>
+                                <span x-text="partNumberMessage"></span>
+                            </p>
+                            <p x-show="!checkingPartNumber && partNumberState === 'exists'" class="text-red-600 flex items-center gap-2">
+                                <span>!</span>
+                                <span x-text="partNumberMessage"></span>
+                            </p>
+                            <p x-show="!checkingPartNumber && partNumberState === 'current'" class="text-gray-600 flex items-center gap-2">
+                                <span>•</span>
+                                <span x-text="partNumberMessage"></span>
+                            </p>
+                            <p x-show="!checkingPartNumber && partNumberState === 'error'" class="text-amber-600 flex items-center gap-2">
+                                <span>⚠</span>
+                                <span x-text="partNumberMessage"></span>
+                            </p>
+                        </div>
                     </div>
 
                     <!-- SKU (Display Only - Auto-generated) -->
@@ -68,6 +103,9 @@
                                 type="text" 
                                 name="barcode" 
                                 id="barcode"
+                                x-model="barcode"
+                                @input.debounce.400ms="checkBarcode()"
+                                @blur="checkBarcode(true)"
                                 value="{{ old('barcode', $inventory->barcode) }}"
                                 x-ref="barcodeInput"
                                 @keydown="handleBarcodeInput($event)"
@@ -89,6 +127,31 @@
                         @error('barcode')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                        <div class="mt-1 text-sm" x-cloak>
+                            <p x-show="checkingBarcode" class="text-blue-600 flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                Checking availability...
+                            </p>
+                            <p x-show="!checkingBarcode && barcodeState === 'available'" class="text-green-600 flex items-center gap-2">
+                                <span>✓</span>
+                                <span x-text="barcodeMessage"></span>
+                            </p>
+                            <p x-show="!checkingBarcode && barcodeState === 'exists'" class="text-red-600 flex items-center gap-2">
+                                <span>!</span>
+                                <span x-text="barcodeMessage"></span>
+                            </p>
+                            <p x-show="!checkingBarcode && barcodeState === 'current'" class="text-gray-600 flex items-center gap-2">
+                                <span>•</span>
+                                <span x-text="barcodeMessage"></span>
+                            </p>
+                            <p x-show="!checkingBarcode && barcodeState === 'error'" class="text-amber-600 flex items-center gap-2">
+                                <span>⚠</span>
+                                <span x-text="barcodeMessage"></span>
+                            </p>
+                        </div>
                     </div>
 
                     <!-- Name -->
@@ -395,75 +458,231 @@
     </div>
 </div>
 
-<script>
-function inventoryForm() {
-    return {
-        minPrice: {{ old('min_price', $inventory->min_price) }},
-        sellingPrice: {{ old('selling_price', $inventory->selling_price) }},
-        barcodeInputTimeout: null,
-        lastBarcodeInputTime: 0,
-        cameraScannerActive: false,
-        
-        init() {
-            // Auto-focus barcode field on page load
-            this.$nextTick(() => {
-                this.$refs.barcodeInput?.focus();
-            });
+@push('scripts')
+    @once
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @endonce
+    <script>
+    function inventoryForm(config = {}) {
+        const settings = Object.assign({
+            inventoryId: null,
+            initialPartNumber: '',
+            initialBarcode: '',
+            checkUrl: '',
+            editUrlTemplate: null,
+            redirectOnDuplicate: false
+        }, config);
+
+        return {
+            minPrice: {{ old('min_price', $inventory->min_price) }},
+            sellingPrice: {{ old('selling_price', $inventory->selling_price) }},
+            barcodeInputTimeout: null,
+            lastBarcodeInputTime: 0,
+            cameraScannerActive: false,
+            inventoryId: settings.inventoryId,
+            checkUrl: settings.checkUrl,
+            editUrlTemplate: settings.editUrlTemplate,
+            redirectOnDuplicate: settings.redirectOnDuplicate,
+            partNumber: settings.initialPartNumber ?? '',
+            originalPartNumber: (settings.initialPartNumber ?? '').trim(),
+            partNumberState: null,
+            partNumberMessage: '',
+            checkingPartNumber: false,
+            lastCheckedPartNumber: '',
+            barcode: settings.initialBarcode ?? '',
+            originalBarcode: (settings.initialBarcode ?? '').trim(),
+            barcodeState: null,
+            barcodeMessage: '',
+            checkingBarcode: false,
+            lastCheckedBarcode: '',
             
-            // Listen for keyboard shortcuts (Ctrl+B or Cmd+B to focus barcode)
-            document.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-                    e.preventDefault();
+            init() {
+                this.$nextTick(() => {
                     this.$refs.barcodeInput?.focus();
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                        e.preventDefault();
+                        this.$refs.barcodeInput?.focus();
+                    }
+                });
+
+                if (this.partNumber) {
+                    this.checkPartNumber(true);
                 }
-            });
-        },
-        
-        handleBarcodeInput(event) {
-            const input = event.target;
-            const currentTime = Date.now();
-            
-            // Detect if this is a barcode scanner input
-            // Barcode scanners typically send characters very quickly (< 50ms between chars)
-            // and end with Enter, Tab, or other special keys
-            if (event.key === 'Enter' || event.key === 'Tab') {
-                // Clear any pending timeout
-                if (this.barcodeInputTimeout) {
-                    clearTimeout(this.barcodeInputTimeout);
-                    this.barcodeInputTimeout = null;
+
+                if (this.barcode) {
+                    this.checkBarcode(true);
                 }
-                
-                // If Enter was pressed and input was rapid, it's likely from a scanner
-                if (event.key === 'Enter' && (currentTime - this.lastBarcodeInputTime) < 100) {
-                    event.preventDefault();
-                    // Process the barcode (you can add lookup logic here if needed)
-                    // For now, just prevent form submission
-                    return false;
+            },
+
+            async checkPartNumber(force = false) {
+                const value = (this.partNumber || '').trim();
+
+                if (!value) {
+                    this.partNumberState = null;
+                    this.partNumberMessage = '';
+                    this.lastCheckedPartNumber = '';
+                    return;
                 }
-            } else {
-                // Regular character input
-                this.lastBarcodeInputTime = currentTime;
-                
-                // Clear previous timeout
-                if (this.barcodeInputTimeout) {
-                    clearTimeout(this.barcodeInputTimeout);
+
+                if (this.inventoryId && value === this.originalPartNumber) {
+                    this.partNumberState = 'current';
+                    this.partNumberMessage = 'Part number remains assigned to this inventory item.';
+                    this.lastCheckedPartNumber = value;
+                    return;
                 }
-                
-                // Set timeout to detect end of input (for scanners that don't send Enter)
-                this.barcodeInputTimeout = setTimeout(() => {
-                    // Input has stopped, could be end of barcode scan
-                    // You can add auto-lookup or validation here if needed
-                }, 200);
+
+                if (!force && value === this.lastCheckedPartNumber && this.partNumberState !== 'error') {
+                    return;
+                }
+
+                this.checkingPartNumber = true;
+
+                try {
+                    const result = await this.checkValue('part_number', value);
+                    if (result.exists && this.redirectOnDuplicate && result.item && this.editUrlTemplate) {
+                        const proceed = await this.promptRedirect(result.item, 'Part number');
+                        if (proceed) {
+                            window.location.href = this.editUrlTemplate.replace('__ID__', result.item.id);
+                            return;
+                        }
+                    }
+
+                    this.partNumberState = result.exists ? 'exists' : 'available';
+                    this.partNumberMessage = result.message || (result.exists
+                        ? 'Part number is already in use.'
+                        : 'Part number is available and not yet used.');
+                } catch (error) {
+                    console.error(error);
+                    this.partNumberState = 'error';
+                    this.partNumberMessage = 'Unable to verify part number right now.';
+                } finally {
+                    this.checkingPartNumber = false;
+                    this.lastCheckedPartNumber = value;
+                }
+            },
+
+            async checkBarcode(force = false) {
+                const value = (this.barcode || '').trim();
+
+                if (!value) {
+                    this.barcodeState = null;
+                    this.barcodeMessage = '';
+                    this.lastCheckedBarcode = '';
+                    return;
+                }
+
+                if (this.inventoryId && value === this.originalBarcode) {
+                    this.barcodeState = 'current';
+                    this.barcodeMessage = 'Barcode remains assigned to this inventory item.';
+                    this.lastCheckedBarcode = value;
+                    return;
+                }
+
+                if (!force && value === this.lastCheckedBarcode && this.barcodeState !== 'error') {
+                    return;
+                }
+
+                this.checkingBarcode = true;
+
+                try {
+                    const result = await this.checkValue('barcode', value);
+                    this.barcodeState = result.exists ? 'exists' : 'available';
+                    this.barcodeMessage = result.message || (result.exists
+                        ? 'Barcode is already in use.'
+                        : 'Barcode is available and not yet used.');
+                } catch (error) {
+                    console.error(error);
+                    this.barcodeState = 'error';
+                    this.barcodeMessage = 'Unable to verify barcode right now.';
+                } finally {
+                    this.checkingBarcode = false;
+                    this.lastCheckedBarcode = value;
+                }
+            },
+
+            async checkValue(field, value) {
+                if (!this.checkUrl) {
+                    throw new Error('Unique check URL is not configured.');
+                }
+
+                const params = new URLSearchParams({ field, value });
+
+                if (this.inventoryId) {
+                    params.append('ignore_id', this.inventoryId);
+                }
+
+                const response = await fetch(`${this.checkUrl}?${params.toString()}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+
+                return await response.json();
+            },
+
+            async promptRedirect(item, fieldLabel) {
+                const itemName = item?.name || 'another inventory item';
+                const title = `${fieldLabel} already exists`;
+                const text = `${fieldLabel} is currently linked to ${itemName}. Do you want to open it for editing?`;
+
+                if (typeof Swal === 'undefined') {
+                    return confirm(`${title}\n\n${text}`);
+                }
+
+                const result = await Swal.fire({
+                    title,
+                    text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Edit Item',
+                    cancelButtonText: 'Stay Here',
+                    reverseButtons: true,
+                    focusCancel: true,
+                });
+
+                return result.isConfirmed;
+            },
+
+            handleBarcodeInput(event) {
+                const currentTime = Date.now();
+
+                if (event.key === 'Enter' || event.key === 'Tab') {
+                    if (this.barcodeInputTimeout) {
+                        clearTimeout(this.barcodeInputTimeout);
+                        this.barcodeInputTimeout = null;
+                    }
+
+                    if (event.key === 'Enter' && (currentTime - this.lastBarcodeInputTime) < 100) {
+                        event.preventDefault();
+                        return false;
+                    }
+                } else {
+                    this.lastBarcodeInputTime = currentTime;
+
+                    if (this.barcodeInputTimeout) {
+                        clearTimeout(this.barcodeInputTimeout);
+                    }
+
+                    this.barcodeInputTimeout = setTimeout(() => {
+                        // End of barcode scan - hook for additional logic if needed
+                    }, 200);
+                }
+            },
+
+            toggleCameraScanner() {
+                alert('Camera scanner functionality can be added here. Would you like to integrate a barcode scanning library?');
             }
-        },
-        
-        toggleCameraScanner() {
-            // Placeholder for camera scanner functionality
-            // You can integrate libraries like QuaggaJS or Html5Qrcode here
-            alert('Camera scanner functionality can be added here. Would you like to integrate a barcode scanning library?');
-        }
+        };
     }
-}
-</script>
+    </script>
+@endpush
 @endsection
 
