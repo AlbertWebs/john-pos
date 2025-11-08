@@ -257,6 +257,15 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                     </svg>
                                 </a>
+                                <form action="{{ route('inventory.destroy', $item) }}" method="POST" class="inline-flex delete-inventory-form" data-item-name="{{ $item->name }}" data-item-part="{{ $item->part_number }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -292,3 +301,48 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+    @once
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @endonce
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const deleteForms = document.querySelectorAll('.delete-inventory-form');
+            deleteForms.forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const itemName = form.dataset.itemName || 'this inventory item';
+                    const partNumber = form.dataset.itemPart ? ` (Part #${form.dataset.itemPart})` : '';
+                    const title = 'Delete inventory item?';
+                    const text = `You are about to delete ${itemName}${partNumber}. This action cannot be undone.`;
+
+                    if (typeof Swal === 'undefined') {
+                        if (confirm(`${title}\n\n${text}`)) {
+                            form.submit();
+                        }
+                        return;
+                    }
+
+                    const result = await Swal.fire({
+                        title,
+                        text,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Yes, delete',
+                        cancelButtonText: 'Cancel',
+                        reverseButtons: true,
+                        focusCancel: true,
+                    });
+
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
+@endpush
