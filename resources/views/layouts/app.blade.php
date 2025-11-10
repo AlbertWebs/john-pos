@@ -204,6 +204,15 @@
                                 </svg>
                                 <span x-show="!sidebarCollapsed">Pending Payments</span>
                             </a>
+                            <a href="{{ route('next-orders.index') }}" 
+                               class="flex items-center {{ request()->routeIs('next-orders.*') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                               title="Next Orders"
+                            >
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-3-9a2 2 0 110-4 2 2 0 010 4zm8 9V9a2 2 0 00-2-2h-1.28a2 2 0 01-1.52-.72L12 4l-2.2 2.28A2 2 0 018.28 7H7a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2z"></path>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">Next Orders</span>
+                            </a>
                         </div>
                     </div>
                     @endcan
