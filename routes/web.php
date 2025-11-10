@@ -10,6 +10,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\VehicleMakeController;
 use App\Http\Controllers\VehicleModelController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\NextOrderController;
 
 // Public E-commerce Routes (for johllyautospares.co.ke)
 // These routes are accessible without authentication
@@ -97,12 +98,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/sales', [\App\Http\Controllers\SaleController::class, 'store'])->name('sales.store');
     Route::get('/sales/{sale}', [\App\Http\Controllers\SaleController::class, 'show'])->name('sales.show');
     Route::get('/sales/{sale}/print', [\App\Http\Controllers\SaleController::class, 'print'])->name('sales.print');
+
+    // Next Orders (Backorder requests)
+    Route::get('/next-orders', [NextOrderController::class, 'index'])->name('next-orders.index');
+    Route::post('/next-orders', [NextOrderController::class, 'store'])->name('next-orders.store');
+    Route::post('/next-orders/mark-purchased', [NextOrderController::class, 'markPurchased'])->name('next-orders.mark-purchased');
+    Route::patch('/next-orders/{nextOrder}/status', [NextOrderController::class, 'updateStatus'])->name('next-orders.update-status');
     
     // Reports
     Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/sales', [\App\Http\Controllers\ReportController::class, 'sales'])->name('reports.sales');
     Route::get('/reports/inventory', [\App\Http\Controllers\ReportController::class, 'inventory'])->name('reports.inventory');
     Route::get('/reports/top-selling', [\App\Http\Controllers\ReportController::class, 'topSelling'])->name('reports.top-selling');
+    Route::get('/most-selling-items', [\App\Http\Controllers\ReportController::class, 'mostSelling'])->name('most-selling.index');
     
     // Returns
     Route::resource('returns', \App\Http\Controllers\ReturnController::class);

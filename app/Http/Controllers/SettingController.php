@@ -37,6 +37,7 @@ class SettingController extends Controller
             'till_number' => 'nullable|string|max:20',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
             'currency' => 'nullable|string|max:10',
+            'next_order_reminder_frequency' => 'required|in:daily,weekly',
         ]);
 
         DB::beginTransaction();

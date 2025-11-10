@@ -302,7 +302,7 @@
                     </a>
                     
                     @can('view reports')
-                    <div x-data="{ open: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
+                    <div x-data="{ open: {{ request()->routeIs('reports.*') || request()->routeIs('most-selling.*') ? 'true' : 'false' }} }">
                         <button 
                             @click="open = !open"
                             class="flex items-center justify-between w-full text-blue-100 hover:bg-white/10 px-4 py-3 rounded-xl mb-2 transition-all group"
@@ -328,6 +328,15 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                                 </svg>
                                 <span x-show="!sidebarCollapsed">All Reports</span>
+                            </a>
+                            <a href="{{ route('most-selling.index') }}" 
+                               class="flex items-center {{ request()->routeIs('most-selling.*') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                               title="Most Selling Items"
+                            >
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17a4 4 0 004-4V5a4 4 0 00-8 0v8a4 4 0 004 4zm0 0v4m-4 0h8"></path>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">Most Selling Items</span>
                             </a>
                         </div>
                     </div>
@@ -547,6 +556,10 @@
         </main>
     </div>
 
+    @auth
+        @include('components.next-order-modal')
+    @endauth
+
     <script>
         function appLayout() {
             return {
@@ -660,6 +673,114 @@
                 layout.sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             }
         });
+
+        function nextOrderModal(storeUrl, csrfToken) {
+            return {
+                open: false,
+                submitting: false,
+                error: null,
+                success: null,
+                form: {
+                    item_name: '',
+                    part_number: '',
+                    requested_quantity: 1,
+                    customer_name: '',
+                    customer_contact: '',
+                    notes: '',
+                },
+                storeUrl,
+                csrfToken,
+
+                init() {
+                    window.addEventListener('open-next-order-modal', (event) => {
+                        this.resetForm();
+                        const detail = event.detail || {};
+                        this.form.item_name = detail.item_name || detail.name || '';
+                        this.form.part_number = detail.part_number || '';
+                        this.form.requested_quantity = detail.requested_quantity || 1;
+                        if (detail.customer_name) {
+                            this.form.customer_name = detail.customer_name;
+                        } else if (detail.customer && detail.customer.name) {
+                            this.form.customer_name = detail.customer.name;
+                        }
+                        this.form.customer_contact = detail.customer_contact || detail.customer_phone || '';
+                        if (detail.notes) {
+                            this.form.notes = detail.notes;
+                        } else if (detail.reason) {
+                            this.form.notes = detail.reason;
+                        } else if (detail.context) {
+                            this.form.notes = detail.context;
+                        }
+                        this.open = true;
+                    });
+
+                    window.addEventListener('close-next-order-modal', () => {
+                        this.close();
+                    });
+                },
+
+                resetForm() {
+                    this.error = null;
+                    this.success = null;
+                    this.form = {
+                        item_name: '',
+                        part_number: '',
+                        requested_quantity: 1,
+                        customer_name: '',
+                        customer_contact: '',
+                        notes: '',
+                    };
+                },
+
+                close() {
+                    this.open = false;
+                    this.resetForm();
+                },
+
+                async submit() {
+                    this.error = null;
+                    this.success = null;
+                    this.submitting = true;
+
+                    try {
+                        const response = await fetch(this.storeUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': this.csrfToken,
+                            },
+                            body: JSON.stringify(this.form),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            const message = data.message || 'Failed to record next order.';
+                            if (data.errors) {
+                                this.error = Object.values(data.errors).flat().join(' ');
+                            } else {
+                                this.error = message;
+                            }
+                            return;
+                        }
+
+                        this.success = data.message || 'Next order recorded successfully.';
+                        window.dispatchEvent(new CustomEvent('next-order-saved', { detail: data }));
+                        window.dispatchEvent(new Event('next-order-created'));
+
+                        setTimeout(() => {
+                            this.close();
+                        }, 1200);
+                    } catch (error) {
+                        console.error('Next order submission failed:', error);
+                        this.error = 'An unexpected error occurred. Please try again.';
+                    } finally {
+                        this.submitting = false;
+                    }
+                },
+            }
+        }
     </script>
     @stack('scripts')
 </body>

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Schema;
 use App\Jobs\SendDailySalesReport;
 use App\Jobs\SendHourlyStockStatus;
 use App\Jobs\SendLowStockAlert;
+use App\Jobs\SendNextOrderReminder;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -21,6 +22,9 @@ Schedule::job(new SendHourlyStockStatus)->hourly();
 
 // Schedule low stock alert check every hour (runs every 30 minutes)
 Schedule::job(new SendLowStockAlert)->everyThirtyMinutes();
+
+// Schedule next order reminders
+Schedule::job(new SendNextOrderReminder)->dailyAt('08:00');
 
 // Command to manually fire all three jobs
 Artisan::command('jobs:run-all', function () {

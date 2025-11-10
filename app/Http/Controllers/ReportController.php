@@ -154,81 +154,9 @@ class ReportController extends Controller
 
     public function topSelling(Request $request)
     {
-        $query = SaleItem::with(['part.category', 'part.brand', 'sale']);
+        $limit = (int) $request->get('limit', 10);
+        $topSelling = $this->prepareTopSelling($request, $limit);
 
-        // Date filters
-        if ($request->filled('start_date')) {
-            $query->whereHas('sale', function($q) use ($request) {
-                $q->whereDate('date', '>=', $request->start_date);
-            });
-        }
-        if ($request->filled('end_date')) {
-            $query->whereHas('sale', function($q) use ($request) {
-                $q->whereDate('date', '<=', $request->end_date);
-            });
-        }
-
-        // Period filter
-        if ($request->filled('period')) {
-            switch ($request->period) {
-                case 'today':
-                    $query->whereHas('sale', function($q) {
-                        $q->whereDate('date', today());
-                    });
-                    break;
-                case 'week':
-                    $query->whereHas('sale', function($q) {
-                        $q->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]);
-                    });
-                    break;
-                case 'month':
-                    $query->whereHas('sale', function($q) {
-                        $q->whereMonth('date', now()->month)
-                          ->whereYear('date', now()->year);
-                    });
-                    break;
-                case 'year':
-                    $query->whereHas('sale', function($q) {
-                        $q->whereYear('date', now()->year);
-                    });
-                    break;
-            }
-        }
-
-        // Get top selling parts
-        $limit = $request->get('limit', 10);
-        
-        $topSellingData = $query->select('part_id', 
-                DB::raw('SUM(quantity) as total_quantity'),
-                DB::raw('SUM(subtotal) as total_revenue'),
-                DB::raw('COUNT(DISTINCT sale_id) as transaction_count')
-            )
-            ->groupBy('part_id')
-            ->orderBy('total_quantity', 'desc')
-            ->limit($limit)
-            ->get();
-
-        // Load parts with relationships
-        $partIds = $topSellingData->pluck('part_id');
-        $parts = Inventory::whereIn('id', $partIds)
-            ->with(['category', 'brand'])
-            ->get()
-            ->keyBy('id');
-
-        // Map data
-        $topSelling = $topSellingData->map(function($item) use ($parts) {
-            $part = $parts->get($item->part_id);
-            return [
-                'part' => $part,
-                'total_quantity' => $item->total_quantity,
-                'total_revenue' => $item->total_revenue,
-                'transaction_count' => $item->transaction_count,
-            ];
-        })->filter(function($item) {
-            return $item['part'] !== null;
-        })->values();
-
-        // Export logic
         if ($request->filled('export')) {
             if ($request->export === 'pdf') {
                 return $this->exportTopSellingPDF($topSelling);
@@ -237,7 +165,29 @@ class ReportController extends Controller
             }
         }
 
-        return view('reports.top-selling', compact('topSelling', 'limit'));
+        $pageTitle = 'Top Selling Parts';
+        $pageDescription = 'View best-selling inventory items';
+
+        return view('reports.top-selling', compact('topSelling', 'limit', 'pageTitle', 'pageDescription'));
+    }
+
+    public function mostSelling(Request $request)
+    {
+        $limit = (int) $request->get('limit', 20);
+        $topSelling = $this->prepareTopSelling($request, $limit);
+
+        if ($request->filled('export')) {
+            if ($request->export === 'pdf') {
+                return $this->exportTopSellingPDF($topSelling);
+            } elseif ($request->export === 'excel') {
+                return $this->exportTopSellingExcel($topSelling);
+            }
+        }
+
+        $pageTitle = 'Most Selling Items';
+        $pageDescription = 'Frequently purchased items based on recent sales';
+
+        return view('reports.top-selling', compact('topSelling', 'limit', 'pageTitle', 'pageDescription'));
     }
 
     // PDF Export Methods
@@ -318,5 +268,77 @@ class ReportController extends Controller
     {
         return Excel::download(new \App\Exports\TopSellingExport($topSelling), 
             'top-selling-parts-' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    private function prepareTopSelling(Request $request, int $limit)
+    {
+        $query = SaleItem::with(['part.category', 'part.brand', 'sale']);
+
+        if ($request->filled('start_date')) {
+            $query->whereHas('sale', function($q) use ($request) {
+                $q->whereDate('date', '>=', $request->start_date);
+            });
+        }
+        if ($request->filled('end_date')) {
+            $query->whereHas('sale', function($q) use ($request) {
+                $q->whereDate('date', '<=', $request->end_date);
+            });
+        }
+
+        if ($request->filled('period')) {
+            switch ($request->period) {
+                case 'today':
+                    $query->whereHas('sale', function($q) {
+                        $q->whereDate('date', today());
+                    });
+                    break;
+                case 'week':
+                    $query->whereHas('sale', function($q) {
+                        $q->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]);
+                    });
+                    break;
+                case 'month':
+                    $query->whereHas('sale', function($q) {
+                        $q->whereMonth('date', now()->month)
+                          ->whereYear('date', now()->year);
+                    });
+                    break;
+                case 'year':
+                    $query->whereHas('sale', function($q) {
+                        $q->whereYear('date', now()->year);
+                    });
+                    break;
+            }
+        }
+
+        $limit = max(1, $limit);
+
+        $topSellingData = $query->select('part_id', 
+                DB::raw('SUM(quantity) as total_quantity'),
+                DB::raw('SUM(subtotal) as total_revenue'),
+                DB::raw('COUNT(DISTINCT sale_id) as transaction_count')
+            )
+            ->groupBy('part_id')
+            ->orderBy('total_quantity', 'desc')
+            ->limit($limit)
+            ->get();
+
+        $partIds = $topSellingData->pluck('part_id');
+        $parts = Inventory::whereIn('id', $partIds)
+            ->with(['category', 'brand'])
+            ->get()
+            ->keyBy('id');
+
+        return $topSellingData->map(function($item) use ($parts) {
+            $part = $parts->get($item->part_id);
+            return [
+                'part' => $part,
+                'total_quantity' => $item->total_quantity,
+                'total_revenue' => $item->total_revenue,
+                'transaction_count' => $item->transaction_count,
+            ];
+        })->filter(function($item) {
+            return $item['part'] !== null;
+        })->values();
     }
 }

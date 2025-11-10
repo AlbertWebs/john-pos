@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Top Selling Parts')
+@section('title', $pageTitle ?? 'Top Selling Parts')
 
 @section('content')
 <div class="space-y-6">
     <!-- Header -->
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Top Selling Parts</h1>
-            <p class="text-gray-600 mt-1">View best-selling inventory items</p>
+            <h1 class="text-3xl font-bold text-gray-900">{{ $pageTitle ?? 'Top Selling Parts' }}</h1>
+            <p class="text-gray-600 mt-1">{{ $pageDescription ?? 'View best-selling inventory items' }}</p>
         </div>
         <div class="flex gap-3">
             <form method="GET" action="{{ route('reports.top-selling') }}" class="flex gap-3">

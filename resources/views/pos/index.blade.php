@@ -149,7 +149,7 @@
 
             <!-- Search Results -->
             <div class="flex-1 overflow-y-auto p-4">
-                <div class="grid grid-cols-2 xl:grid-cols-4 gap-4" x-show="!loading && products.length > 0">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" x-show="!loading && products.length > 0">
                     <template x-for="product in products" :key="product.id">
                         <div 
                             @click="addToCart(product)"
@@ -242,7 +242,7 @@
                 </div>
 
                 <!-- Empty State -->
-                <div x-show="!loading && products.length === 0 && searchQuery" class="flex flex-col items-center justify-center h-64">
+                <div x-show="!loading && products.length === 0 && searchQuery" class="flex flex-col items-center justify-center h-64 space-y-4">
                     <div class="bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl p-8 shadow-lg">
                         <svg class="w-20 h-20 text-orange-500 mb-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -250,6 +250,16 @@
                         <p class="text-orange-700 font-bold text-lg text-center">No products found</p>
                         <p class="text-orange-600 text-sm text-center mt-2">Try a different search term</p>
                     </div>
+                    <button 
+                        type="button"
+                        @click="openNextOrderFromSearch()"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition flex items-center gap-2"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add Request to Next Orders
+                    </button>
                 </div>
 
                 <!-- Initial State -->
@@ -848,6 +858,11 @@ function posInterface() {
             
             // Initialize audio context on first user interaction
             this.initializeAudio();
+
+            window.addEventListener('next-order-saved', (event) => {
+                const message = event.detail && event.detail.message ? event.detail.message : 'Next order recorded successfully.';
+                this.showNotification(message, 'success');
+            });
         },
 
         initializeAudio() {
@@ -991,6 +1006,10 @@ function posInterface() {
                     // Check if product is in stock
                     if (product.stock_quantity <= 0) {
                         this.showNotification(`${product.name} is out of stock`, 'error');
+                        this.openNextOrderModal({
+                            item_name: product.name,
+                            part_number: product.part_number,
+                        });
                         this.barcodeQuery = '';
                         this.$refs.barcodeInput?.focus();
                         return;
@@ -1013,6 +1032,10 @@ function posInterface() {
                         this.showNotification(`Found ${data.length} product(s) matching "${barcode}". Please select from the list.`, 'warning');
                     } else {
                         this.showNotification(`No product found with barcode "${barcode}"`, 'error');
+                        this.openNextOrderModal({
+                            item_name: barcode,
+                            notes: `Requested via barcode search "${barcode}"`,
+                        });
                         this.barcodeQuery = '';
                         this.$refs.barcodeInput?.focus();
                     }
@@ -1028,6 +1051,10 @@ function posInterface() {
         addToCart(product) {
             if (product.stock_quantity <= 0) {
                 this.showNotification('This item is out of stock', 'error');
+                this.openNextOrderModal({
+                    item_name: product.name,
+                    part_number: product.part_number,
+                });
                 return;
             }
 
@@ -1105,6 +1132,38 @@ function posInterface() {
             this.cartTotal.tax = this.tax || 0;
             this.cartTotal.discount = this.discount || 0;
             this.cartTotal.total = this.cartTotal.subtotal + this.cartTotal.tax - this.cartTotal.discount;
+        },
+
+        openNextOrderModal(detail = {}) {
+            const payload = {
+                item_name: detail.item_name || '',
+                part_number: detail.part_number || '',
+                requested_quantity: detail.requested_quantity || 1,
+                customer_name: detail.customer_name || (this.selectedCustomer ? this.selectedCustomer.name : ''),
+                customer_contact: detail.customer_contact || (this.selectedCustomer ? (this.selectedCustomer.phone || '') : ''),
+                notes: detail.notes || '',
+            };
+
+            if (!payload.item_name && this.searchQuery) {
+                payload.item_name = this.searchQuery;
+            }
+
+            if (!payload.notes && this.searchQuery) {
+                payload.notes = `Requested via search "${this.searchQuery}"`;
+            }
+
+            window.dispatchEvent(new CustomEvent('open-next-order-modal', { detail: payload }));
+        },
+
+        openNextOrderFromSearch() {
+            if (!this.searchQuery || this.searchQuery.trim().length === 0) {
+                this.showNotification('Enter a product name first.', 'warning');
+                return;
+            }
+
+            this.openNextOrderModal({
+                item_name: this.searchQuery,
+            });
         },
 
         showNotification(message, type = 'error') {
