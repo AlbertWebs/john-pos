@@ -40,13 +40,17 @@ class ReturnController extends Controller
         $saleId = $request->get('sale_id');
         $sale = null;
         $saleItems = collect();
+        $recentSales = Sale::with('customer')
+            ->orderByDesc('created_at')
+            ->take(15)
+            ->get();
 
         if ($saleId) {
             $sale = Sale::with(['saleItems.part', 'customer'])->findOrFail($saleId);
             $saleItems = $sale->saleItems;
         }
 
-        return view('returns.create', compact('sale', 'saleItems'));
+        return view('returns.create', compact('sale', 'saleItems', 'recentSales'));
     }
 
     public function store(Request $request)
