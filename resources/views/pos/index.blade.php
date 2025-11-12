@@ -1406,6 +1406,10 @@ function posInterface() {
         },
 
         async searchByBarcode() {
+            if (this.scanningBarcode) {
+                return;
+            }
+
             if (!this.barcodeQuery || this.barcodeQuery.trim().length === 0) {
                 return;
             }
