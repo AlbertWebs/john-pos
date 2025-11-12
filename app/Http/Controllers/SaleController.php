@@ -17,7 +17,7 @@ class SaleController extends Controller
 {
     public function index()
     {
-        $sales = Sale::with(['customer', 'user', 'saleItems.part'])
+        $sales = Sale::with(['customer', 'user', 'saleItems.part', 'payments', 'returns'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
         

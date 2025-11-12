@@ -95,12 +95,12 @@
         </template>
     </div>
 
-    <div class="flex-1 flex overflow-hidden">
+    <div class="flex-1 flex overflow-hidden relative">
         <!-- Left Panel - Product Search & Selection -->
-        <div class="w-2/3 bg-white border-r border-gray-200 flex flex-col">
+        <div class="w-full bg-white border-r border-gray-200 flex flex-col">
             <!-- Barcode Scanner & Search Bar - Side by Side -->
             <div class="bg-gradient-to-r from-green-50 via-blue-50 to-indigo-50 border-b border-gray-200 p-4 shadow-sm">
-                <div class="flex gap-4">
+                <div class="flex gap-4 flex-wrap lg:flex-nowrap items-end">
                     <!-- Barcode Scanner -->
                     <div class="flex-1">
                         <label class="block text-sm font-semibold text-gray-800 mb-2">
@@ -148,8 +148,8 @@
             </div>
 
             <!-- Search Results -->
-            <div class="flex-1 overflow-y-auto p-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" x-show="!loading && products.length > 0">
+            
+                <div style="padding: 20px;" class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="!loading && products.length > 0">
                     <template x-for="product in products" :key="product.id">
                         <div 
                             @click="addToCart(product)"
@@ -273,320 +273,396 @@
                     </div>
                 </div>
             </div>
-
-            <!-- C2B Payment Allocation Section -->
-            <div class="border-t-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="block text-sm font-bold text-blue-900">Direct Paybill Payments</label>
-                    <button 
-                        type="button"
-                        @click="loadPendingPayments()"
-                        class="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                        🔄 Refresh
-                    </button>
-                </div>
-                
-                <!-- Search/Filter Pending Payments -->
-                <input 
-                    type="text" 
-                    x-model="pendingPaymentSearch"
-                    @input.debounce.300ms="searchPendingPayments()"
-                    placeholder="Search by phone, reference, or amount..."
-                    class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white mb-2"
-                >
-                
-                <!-- Pending Payments List -->
-                <div class="max-h-48 overflow-y-auto space-y-2" x-show="pendingPayments.length > 0">
-                    <template x-for="payment in filteredPendingPayments" :key="payment.id">
-                        <div 
-                            @click="selectPendingPayment(payment)"
-                            class="p-2 bg-white rounded-lg border-2 cursor-pointer transition"
-                            :class="selectedPendingPayment && selectedPendingPayment.id === payment.id ? 'border-blue-500 bg-blue-50' : 'border-blue-200 hover:border-blue-400'"
-                        >
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <p class="text-xs font-bold text-gray-900" x-text="'KES ' + formatPrice(payment.amount)"></p>
-                                    <p class="text-xs text-gray-600" x-text="payment.phone_number"></p>
-                                    <p class="text-xs text-gray-500" x-text="payment.transaction_reference"></p>
-                                </div>
-                                <div class="flex-shrink-0 ml-2">
-                                    <span 
-                                        class="px-2 py-1 text-xs rounded font-semibold"
-                                        :class="Math.abs(payment.amount - cartTotal.total) <= 0.01 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
-                                        x-text="Math.abs(payment.amount - cartTotal.total) <= 0.01 ? 'Match' : 'Mismatch'"
-                                    ></span>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-                
-                <!-- No Pending Payments -->
-                <div x-show="pendingPayments.length === 0 && !loadingPendingPayments" class="text-center py-2">
-                    <p class="text-xs text-gray-500">No pending C2B payments</p>
-                </div>
-                
-                <!-- Loading State -->
-                <div x-show="loadingPendingPayments" class="text-center py-2">
-                    <svg class="animate-spin h-4 w-4 text-blue-600 mx-auto" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                </div>
-                
-                <!-- Selected Payment Info -->
-                <div x-show="selectedPendingPayment" class="bg-green-50 border-2 border-green-300 rounded-lg p-2 mt-2">
-                    <p class="text-xs font-bold text-green-900 mb-1">Selected Payment:</p>
-                    <p class="text-xs text-green-700" x-text="'KES ' + formatPrice(selectedPendingPayment.amount) + ' - ' + selectedPendingPayment.transaction_reference"></p>
-                    <button 
-                        type="button"
-                        @click="selectedPendingPayment = null; transactionReference = ''"
-                        class="mt-1 text-xs text-red-600 hover:text-red-800 font-medium"
-                    >
-                        Clear Selection
-                    </button>
-                </div>
-            </div>
         </div>
 
-        <!-- Right Panel - Cart & Checkout -->
-        <div class="w-1/3 bg-gradient-to-b from-white to-gray-50 flex flex-col shadow-lg">
-            <!-- Customer Selection -->
-            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200 p-4 shadow-sm">
-                <label class="block text-sm font-semibold text-gray-800 mb-2">Customer (Optional)</label>
-                <div class="flex gap-2">
-                    <input 
-                        type="text" 
-                        x-model="customerSearch"
-                        @input.debounce.300ms="searchCustomers()"
-                        placeholder="Search customer..."
-                        class="flex-1 px-3 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white shadow-sm"
-                    >
-                    <button 
-                        @click="showCustomerModal = true"
-                        class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg text-sm font-semibold shadow-md transition transform hover:scale-105"
-                    >
-                        + New
-                    </button>
-                </div>
-                <div x-show="selectedCustomer" class="mt-3 p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg shadow-md">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <span class="text-sm font-bold text-white block" x-text="selectedCustomer.name"></span>
-                            <p class="text-xs text-blue-100 mt-1" x-text="'⭐ ' + (selectedCustomer.loyalty_points || 0) + ' points'"></p>
-                        </div>
-                        <button @click="selectedCustomer = null" class="text-white hover:text-red-200 transition">
+        <button
+            x-show="!showCartModal"
+            @click="showCartModal = true"
+            class="fixed bottom-6 right-6 z-30 flex items-center gap-2 px-5 py-3 rounded-full shadow-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white font-semibold transition transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300"
+        >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.293 2.293a1 1 0 00-.117.91L6 18h12m-4 0a2 2 0 11-4 0"></path>
+            </svg>
+            <span>Cart</span>
+            <span class="px-2 py-0.5 text-xs font-bold bg-white text-purple-600 rounded-full" x-text="cart.length"></span>
+        </button>
+
+        <!-- Cart & Checkout Modal -->
+        <div 
+            x-show="showCartModal"
+            x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-40 flex items-center justify-center p-4"
+            @click.self="showCartModal = false"
+            @keydown.escape.window="showCartModal = false"
+        >
+            <div class="relative w-[98vw] max-w-6xl max-h-[100vh] bg-gradient-to-br from-white via-indigo-50 to-purple-50 rounded-3xl shadow-2xl border border-indigo-100 flex flex-col overflow-hidden">
+                <div class="flex items-start justify-between px-6 py-5 border-b border-indigo-100 bg-white/70 backdrop-blur">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Shopping Cart & Checkout</h2>
+                        <p class="text-sm text-gray-500 mt-1">Review items, select payment and complete the sale.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 text-xs font-semibold bg-indigo-100 text-indigo-700 rounded-full" x-text="cart.length + ' item(s)'"></span>
+                        <button 
+                            type="button"
+                            @click="showCartModal = false"
+                            class="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition"
+                        >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Cart -->
-            <div class="flex-1 overflow-y-auto p-4">
-                <div class="flex items-center gap-2 mb-4">
-                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                    </svg>
-                    <h2 class="text-lg font-bold text-gray-900">Shopping Cart</h2>
-                    <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold" x-text="cart.length" x-show="cart.length > 0"></span>
-                </div>
-                
-                <div x-show="cart.length === 0" class="text-center py-12">
-                    <div class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-8">
-                        <svg class="w-20 h-20 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                        </svg>
-                        <p class="text-gray-500 font-medium">Your cart is empty</p>
-                        <p class="text-xs text-gray-400 mt-1">Add products to get started</p>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <template x-for="(item, index) in cart" :key="index">
-                        <div class="bg-gradient-to-br from-white to-blue-50 rounded-xl p-4 border-2 border-blue-200 shadow-md hover:shadow-lg transition">
-                            <div class="flex justify-between items-start mb-3">
-                                <div class="flex-1 min-w-0 pr-2">
-                                    <h3 class="font-bold text-gray-900 text-sm mb-1" x-text="item.name"></h3>
-                                    <p class="text-xs text-gray-500" x-text="item.part_number"></p>
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <div class="flex flex-col xl:flex-row gap-6">
+                        <!-- Left Column: Customer & Cart -->
+                        <div class="flex-1 space-y-6">
+                            <div class="bg-white rounded-2xl shadow-md border border-indigo-100 p-5">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">Customer (Optional)</h3>
+                                    <button 
+                                        type="button"
+                                        @click="openCustomerModal($event)"
+                                        class="px-3 py-1.5 text-sm font-medium rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow hover:from-indigo-600 hover:to-purple-600 transition"
+                                    >
+                                        + New Customer
+                                    </button>
                                 </div>
-                                <button @click="removeFromCart(index)" class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg p-1 transition">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                <div class="flex flex-col md:flex-row md:items-center gap-3">
+                                    <input 
+                                        type="text" 
+                                        x-model="customerSearch"
+                                        @input.debounce.300ms="searchCustomers()"
+                                        placeholder="Search customer..."
+                                        class="flex-1 px-3 py-2.5 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white shadow-sm"
+                                    >
+                                    <button 
+                                        type="button"
+                                        @click="selectedCustomer = null"
+                                        x-show="selectedCustomer"
+                                        class="text-sm font-medium text-red-500 hover:text-red-700 transition"
+                                    >
+                                        Clear selection
+                                    </button>
+                                </div>
+                                <div x-show="selectedCustomer" class="mt-4 p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl shadow text-white">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="text-sm font-semibold" x-text="selectedCustomer.name"></p>
+                                            <p class="text-xs text-blue-100 mt-1" x-text="'⭐ ' + (selectedCustomer.loyalty_points || 0) + ' points'"></p>
+                                        </div>
+                                        <button @click="selectedCustomer = null" class="text-white hover:text-red-200 transition">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div x-show="selectedCustomer" class="mt-3 bg-white border border-indigo-100 rounded-xl shadow-sm p-4 space-y-4">
+                                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div>
+                                            <p class="text-sm font-semibold text-indigo-900">Loyalty Points</p>
+                                            <p class="text-2xl font-bold text-indigo-600" x-text="(selectedCustomer.loyalty_points || 0).toLocaleString()"></p>
+                                            <p class="text-xs text-indigo-500" x-text="'Value: KES ' + formatPrice(selectedCustomer.loyalty_points || 0)"></p>
+                                        </div>
+                                        <div class="flex flex-col md:flex-row md:items-center gap-2">
+                                            <button 
+                                                type="button"
+                                                @click="openRedeemPointsModal()"
+                                                :disabled="!selectedCustomer || !selectedCustomer.loyalty_points || selectedCustomer.loyalty_points <= 0"
+                                                class="px-3 py-2 text-xs font-semibold rounded-lg bg-green-500 hover:bg-green-600 text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Redeem Points
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                @click="openAdjustPointsModal()"
+                                                class="px-3 py-2 text-xs font-semibold rounded-lg bg-purple-500 hover:bg-purple-600 text-white transition"
+                                            >
+                                                Adjust Points
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="text-[11px] text-indigo-400 flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                        <span>1 point = 1 KES discount. Apply redeemed points directly to this sale.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-2xl shadow-md border border-indigo-100 p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                                     </svg>
-                                </button>
-                            </div>
-                            
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-2">
-                                    <button 
-                                        @click="updateQuantity(index, -1)"
-                                        class="w-8 h-8 rounded-lg border-2 border-gray-300 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 flex items-center justify-center text-sm font-bold transition"
-                                        :disabled="item.quantity <= 1"
-                                        :class="item.quantity <= 1 ? 'opacity-50 cursor-not-allowed' : ''"
-                                    >-</button>
-                                    <input 
-                                        type="number" 
-                                        x-model="item.quantity"
-                                        @change="updateCartItem(index)"
-                                        min="1"
-                                        :max="item.stock_quantity"
-                                        class="w-16 text-center border-2 border-gray-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    >
-                                    <button 
-                                        @click="updateQuantity(index, 1)"
-                                        class="w-8 h-8 rounded-lg border-2 border-gray-300 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 flex items-center justify-center text-sm font-bold transition"
-                                        :disabled="item.quantity >= item.stock_quantity"
-                                        :class="item.quantity >= item.stock_quantity ? 'opacity-50 cursor-not-allowed' : ''"
-                                    >+</button>
+                                    <h3 class="text-lg font-semibold text-gray-900">Cart Items</h3>
+                                    <span class="px-2 py-1 text-xs font-semibold bg-indigo-100 text-indigo-700 rounded-full" x-show="cart.length > 0" x-text="cart.length"></span>
                                 </div>
-                                <span class="font-bold text-lg text-green-600" x-text="'KES ' + formatPrice(item.quantity * item.price)"></span>
-                            </div>
-                            
-                            <div class="space-y-2 pt-2 border-t border-gray-200">
-                                <!-- Price Adjustment -->
-                                <div class="flex items-center gap-2">
-                                    <label class="text-xs font-semibold text-gray-700 whitespace-nowrap">Price:</label>
-                                    <input 
-                                        type="number" 
-                                        x-model.number="item.price"
-                                        @change="updateItemPrice(index)"
-                                        :min="item.min_price"
-                                        step="0.01"
-                                        class="flex-1 px-2 py-1.5 border-2 rounded-lg text-sm font-medium"
-                                        :class="Number(item.price) < Number(item.min_price) ? 'border-red-500 bg-red-50 text-red-700' : 'border-indigo-300 focus:ring-2 focus:ring-indigo-500'"
-                                        placeholder="Price"
-                                    >
-                                    <span class="text-xs font-semibold text-gray-600 whitespace-nowrap">KES</span>
+
+                                <div x-show="cart.length === 0" class="text-center py-10">
+                                    <div class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-8 max-w-md mx-auto">
+                                        <svg class="w-20 h-20 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.293 2.293a1 1 0 00-.117.91L6 18h12m-4 0a2 2 0 11-4 0"></path>
+                                        </svg>
+                                        <p class="text-gray-500 font-medium">Your cart is empty</p>
+                                        <p class="text-xs text-gray-400 mt-2">Add products from the list on the left</p>
+                                    </div>
                                 </div>
-                                <div class="flex items-center justify-between text-xs">
-                                    <span 
-                                        class="text-xs font-medium"
-                                        :class="Number(item.price) < Number(item.min_price) ? 'text-red-600' : 'text-gray-600'"
-                                        x-text="'Min: KES ' + formatPrice(item.min_price)"
-                                    ></span>
-                                    <span 
-                                        class="px-2.5 py-1 rounded-md font-semibold text-xs"
-                                        :class="item.quantity > item.stock_quantity ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
-                                        x-text="'Stock: ' + item.stock_quantity"
-                                    ></span>
+
+                                <div x-show="cart.length > 0" class="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
+                                    <template x-for="(item, index) in cart" :key="item.id">
+                                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3 transition transform hover:-translate-y-1 hover:shadow-lg">
+                                            <div class="flex justify-between items-start gap-4">
+                                                <div>
+                                                    <h4 class="text-sm font-bold text-gray-900" x-text="item.name"></h4>
+                                                    <p class="text-xs text-gray-500 mt-1">Part #: <span x-text="item.part_number"></span></p>
+                                                </div>
+                                                <button 
+                                                    @click="removeFromCart(index)"
+                                                    class="text-red-500 hover:text-red-700 transition"
+                                                >
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="flex justify-between items-center gap-4">
+                                                <div class="flex items-center gap-2">
+                                                    <button 
+                                                        @click="updateQuantity(index, -1)"
+                                                        class="w-8 h-8 rounded-lg border-2 border-gray-300 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 flex items-center justify-center text-sm font-bold transition"
+                                                        :disabled="item.quantity <= 1"
+                                                        :class="item.quantity <= 1 ? 'opacity-50 cursor-not-allowed' : ''"
+                                                    >-</button>
+                                                    <input 
+                                                        type="number" 
+                                                        x-model="item.quantity"
+                                                        @change="updateCartItem(index)"
+                                                        min="1"
+                                                        :max="item.stock_quantity"
+                                                        class="w-16 text-center border-2 border-gray-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                    >
+                                                    <button 
+                                                        @click="updateQuantity(index, 1)"
+                                                        class="w-8 h-8 rounded-lg border-2 border-gray-300 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 flex items-center justify-center text-sm font-bold transition"
+                                                        :disabled="item.quantity >= item.stock_quantity"
+                                                        :class="item.quantity >= item.stock_quantity ? 'opacity-50 cursor-not-allowed' : ''"
+                                                    >+</button>
+                                                </div>
+                                                <span class="font-bold text-lg text-green-600" x-text="'KES ' + formatPrice(item.quantity * item.price)"></span>
+                                            </div>
+                                            
+                                            <div class="space-y-2 pt-2 border-t border-gray-200">
+                                                <div class="flex items-center gap-2">
+                                                    <label class="text-xs font-semibold text-gray-700 whitespace-nowrap">Price:</label>
+                                                    <input 
+                                                        type="number" 
+                                                        x-model.number="item.price"
+                                                        @change="updateItemPrice(index)"
+                                                        :min="item.min_price"
+                                                        step="0.01"
+                                                        class="flex-1 px-2 py-1.5 border-2 rounded-lg text-sm font-medium"
+                                                        :class="Number(item.price) < Number(item.min_price) ? 'border-red-500 bg-red-50 text-red-700' : 'border-indigo-300 focus:ring-2 focus:ring-indigo-500'"
+                                                        placeholder="Price"
+                                                    >
+                                                    <span class="text-xs font-semibold text-gray-600 whitespace-nowrap">KES</span>
+                                                </div>
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span 
+                                                        class="text-xs font-medium"
+                                                        :class="Number(item.price) < Number(item.min_price) ? 'text-red-600' : 'text-gray-600'"
+                                                        x-text="'Min: KES ' + formatPrice(item.min_price)"
+                                                    ></span>
+                                                    <span 
+                                                        class="px-2.5 py-1 rounded-md font-semibold text-xs"
+                                                        :class="item.quantity > item.stock_quantity ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                                        x-text="'Stock: ' + item.stock_quantity"
+                                                    ></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                         </div>
-                    </template>
-                </div>
-            </div>
 
-            <!-- Totals & Checkout -->
-            <div class="border-t-2 border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-5 shadow-lg">
-                <div class="space-y-3 mb-5 bg-white rounded-xl p-4 shadow-md">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600 font-medium">Subtotal</span>
-                        <span class="font-semibold text-gray-900" x-text="'KES ' + formatPrice(cartTotal.subtotal)"></span>
-                    </div>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-600 font-medium">Tax</span>
-                        <input 
-                            type="number" 
-                            x-model.number="tax"
-                            @input="calculateTotal()"
-                            min="0"
-                            step="0.01"
-                            class="w-28 text-right border-2 border-indigo-200 rounded-lg px-2 py-1.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder="0.00"
-                        >
-                    </div>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-600 font-medium">Discount</span>
-                        <input 
-                            type="number" 
-                            x-model.number="discount"
-                            @input="calculateTotal()"
-                            min="0"
-                            step="0.01"
-                            class="w-28 text-right border-2 border-indigo-200 rounded-lg px-2 py-1.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder="0.00"
-                        >
-                    </div>
-                    <div class="flex justify-between items-center text-xl font-bold border-t-2 border-indigo-200 pt-3">
-                        <span class="text-gray-800">Total</span>
-                        <span class="text-green-600 text-2xl" x-text="'KES ' + formatPrice(cartTotal.total)"></span>
-                    </div>
-                </div>
+                        <!-- Right Column: Totals & Payment -->
+                        <div class="w-full xl:w-96 space-y-6">
+                            <div class="bg-white rounded-2xl shadow-md border border-indigo-100 p-5 space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-1 gap-4">
+                                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                                        <p class="text-sm text-gray-500">Subtotal</p>
+                                        <p class="text-2xl font-bold text-gray-900 mt-1" x-text="'KES ' + formatPrice(cartTotal.subtotal)"></p>
+                                    </div>
+                                    <div class="bg-purple-50 border border-purple-100 rounded-xl p-4">
+                                        <label class="text-sm text-gray-500 block mb-1">Discount</label>
+                                        <input 
+                                            type="number" 
+                                            x-model.number="discount"
+                                            @input="calculateTotal()"
+                                            min="0"
+                                            step="0.01"
+                                            class="w-full text-right border-2 border-purple-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                            placeholder="0.00"
+                                        >
+                                    </div>
+                                    <div class="bg-green-50 border border-green-100 rounded-xl p-4">
+                                        <p class="text-sm text-gray-500">Total Due</p>
+                                        <p class="text-2xl font-bold text-green-600 mt-1" x-text="'KES ' + formatPrice(cartTotal.total)"></p>
+                                    </div>
+                                </div>
 
-                <div class="space-y-3">
-                    <div class="flex gap-2">
-                        <button 
-                            @click="paymentMethod = 'Cash'"
-                            class="flex-1 py-3 px-4 rounded-xl font-bold text-sm transition transform hover:scale-105 shadow-md"
-                            :class="paymentMethod === 'Cash' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
-                        >
-                            💵 Cash
-                        </button>
-                        <button 
-                            @click="paymentMethod = 'M-Pesa'"
-                            class="flex-1 py-3 px-4 rounded-xl font-bold text-sm transition transform hover:scale-105 shadow-md"
-                            :class="paymentMethod === 'M-Pesa' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
-                        >
-                            📱 M-Pesa
-                        </button>
-                    </div>
-                    
-                    <div x-show="paymentMethod === 'M-Pesa'" class="space-y-3">
-                        <!-- STK Push Section -->
-                        <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-3 space-y-2">
-                            <p class="text-xs font-bold text-yellow-900 mb-2">Or use STK Push:</p>
-                            <input 
-                                type="tel" 
-                                x-model="mpesaPhoneNumber"
-                                :disabled="!!selectedPendingPayment"
-                                :placeholder="selectedCustomer ? selectedCustomer.phone || 'Customer phone number (2547XXXXXXXX)' : 'Customer phone number (2547XXXXXXXX)'"
-                                class="w-full px-3 py-2.5 border-2 border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm font-medium bg-white"
-                                :class="selectedPendingPayment ? 'opacity-50 cursor-not-allowed' : ''"
-                            >
-                            <p class="text-xs text-yellow-700 font-medium">Use customer phone number for M-Pesa payment</p>
-                            <button 
-                                type="button"
-                                @click="initiateSTKPush()"
-                                :disabled="!mpesaPhoneNumber || cartTotal.total <= 0 || processingSTK || !!selectedPendingPayment"
-                                class="w-full py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg font-bold transition transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none text-sm flex items-center justify-center gap-2 shadow-md"
-                            >
-                                <span x-show="!processingSTK">📱 Initiate STK Push</span>
-                                <span x-show="processingSTK" class="flex items-center gap-2">
-                                    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Processing...
-                                </span>
-                            </button>
-                            <input 
-                                type="text" 
-                                x-model="transactionReference"
-                                placeholder="Transaction reference (auto-filled after STK or C2B)"
-                                class="w-full px-3 py-2 border-2 border-yellow-200 rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm bg-white font-medium"
-                                :readonly="!!selectedPendingPayment"
-                            >
-                            <p class="text-xs text-yellow-600 font-medium" x-show="!selectedPendingPayment">Enter phone number and click "Initiate STK Push" to prompt customer</p>
+                                <div class="space-y-3">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <button 
+                                            @click="paymentMethod = 'Cash'"
+                                            class="py-3 px-4 rounded-xl font-bold text-sm transition transform hover:scale-105 shadow-md"
+                                            :class="paymentMethod === 'Cash' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                                        >
+                                            💵 Cash
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            @click="paymentMethod = 'M-Pesa'; useSTKPush = false; openPendingPaymentsModal();"
+                                            class="py-3 px-4 rounded-xl font-bold text-sm transition transform hover:scale-105 shadow-md"
+                                            :class="selectedPendingPayment ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'"
+                                        >
+                                            M-PESA
+                                        </button>
+                                        <button 
+                                            @click="paymentMethod = 'M-Pesa'; useSTKPush = true; selectedPendingPayment = null;"
+                                            class="py-3 px-4 rounded-xl font-bold text-sm transition transform hover:scale-105 shadow-md"
+                                            :class="paymentMethod === 'M-Pesa' && useSTKPush ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                                        >
+                                            ⚡ Prompt
+                                        </button>
+                                    </div>
+
+                                    <div x-show="paymentMethod === 'M-Pesa'" class="space-y-3">
+                                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-3 space-y-3">
+                                            <div x-show="selectedPendingPayment" class="bg-white border border-blue-200 rounded-lg p-3 space-y-1">
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <p class="text-sm font-semibold text-blue-900" x-text="'KES ' + formatPrice(selectedPendingPayment.amount)"></p>
+                                                        <p class="text-xs text-gray-600" x-text="selectedPendingPayment.phone_number"></p>
+                                                        <p class="text-xs text-gray-500" x-text="selectedPendingPayment.transaction_reference"></p>
+                                                    </div>
+                                                    <span 
+                                                        class="px-2 py-1 text-[11px] rounded font-semibold"
+                                                        :class="Math.abs((selectedPendingPayment?.amount || 0) - cartTotal.total) <= 0.01 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
+                                                        x-text="Math.abs((selectedPendingPayment?.amount || 0) - cartTotal.total) <= 0.01 ? 'Match' : 'Mismatch'"
+                                                    ></span>
+                                                </div>
+                                                <div class="flex items-center justify-between text-xs text-blue-700">
+                                                    <button 
+                                                        type="button"
+                                                        @click="selectedPendingPayment = null; transactionReference = ''"
+                                                        class="font-semibold text-red-600 hover:text-red-800"
+                                                    >
+                                                        Clear Selection
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        @click.stop.prevent="openPendingPaymentsModal()"
+                                                        class="font-semibold text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        Change Payment
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div x-show="!selectedPendingPayment" class="flex items-center justify-between text-xs text-blue-600">
+                                                <span>No direct payment selected yet.</span>
+                                                <button 
+                                                    type="button"
+                                                    @click.stop.prevent="openPendingPaymentsModal()"
+                                                    class="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition"
+                                                >
+                                                    View Payments
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <template x-if="useSTKPush">
+                                            <div 
+                                                x-cloak
+                                                class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-3 space-y-2"
+                                            >
+                                                <p class="text-xs font-bold text-yellow-900 mb-2">Or use STK Push:</p>
+                                                <input 
+                                                    type="tel" 
+                                                    x-model="mpesaPhoneNumber"
+                                                    :disabled="!!selectedPendingPayment"
+                                                    :placeholder="selectedCustomer ? selectedCustomer.phone || 'Customer phone number (2547XXXXXXXX)' : 'Customer phone number (2547XXXXXXXX)'"
+                                                    class="w-full px-3 py-2.5 border-2 border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm font-medium bg-white"
+                                                    :class="selectedPendingPayment ? 'opacity-50 cursor-not-allowed' : ''"
+                                                >
+                                                <p class="text-xs text-yellow-700 font-medium">Use customer phone number for M-Pesa payment</p>
+                                                <button 
+                                                    type="button"
+                                                    @click="initiateSTKPush()"
+                                                    :disabled="!mpesaPhoneNumber || cartTotal.total <= 0 || processingSTK || !!selectedPendingPayment"
+                                                    class="w-full py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg font-bold transition transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none text-sm flex items-center justify-center gap-2 shadow-md"
+                                                >
+                                                    <span x-show="!processingSTK">📱 Initiate STK Push</span>
+                                                    <span x-show="processingSTK" class="flex items-center gap-2">
+                                                        <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        Processing...
+                                                    </span>
+                                                </button>
+                                                <input 
+                                                    type="text" 
+                                                    x-model="transactionReference"
+                                                    placeholder="Transaction reference (auto-filled after STK or C2B)"
+                                                    class="hidden w-full px-3 py-2 border-2 border-yellow-200 rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm bg-white font-medium"
+                                                    :readonly="!!selectedPendingPayment"
+                                                >
+                                                <p class="text-xs text-yellow-600 font-medium" x-show="!selectedPendingPayment">Enter phone number and click "Initiate STK Push" to prompt customer</p>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="px-6 py-4 border-t border-indigo-100 bg-white/80 backdrop-blur flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <button 
+                        type="button"
+                        @click="showCartModal = false"
+                        class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
+                    >
+                        Continue Shopping
+                    </button>
 
                     <button 
                         @click="checkout()"
                         :disabled="cart.length === 0 || processing"
-                        class="w-full py-4 bg-gradient-to-r from-green-500 via-green-600 to-green-700 hover:from-green-600 hover:via-green-700 hover:to-green-800 text-white rounded-xl font-bold text-lg transition transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg flex items-center justify-center gap-2"
+                        class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-green-500 via-green-600 to-green-700 hover:from-green-600 hover:via-green-700 hover:to-green-800 text-white rounded-xl font-bold text-base transition transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg flex items-center justify-center gap-2"
                     >
                         <span x-show="!processing" class="flex items-center gap-2">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Complete Sale
                         </span>
                         <span x-show="processing" class="flex items-center justify-center gap-2">
-                            <svg class="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
@@ -594,177 +670,501 @@
                         </span>
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Customer Modal -->
-    <div 
-        x-show="showCustomerModal"
-        x-cloak
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-        @click.self="showCustomerModal = false"
-        @keydown.escape.window="showCustomerModal = false"
-    >
-        <div 
-            class="bg-white rounded-lg shadow-xl max-w-md w-full p-6" 
-            @click.stop
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0 transform scale-95"
-            x-transition:enter-end="opacity-100 transform scale-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100 transform scale-100"
-            x-transition:leave-end="opacity-0 transform scale-95"
-        >
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-900">Add New Customer</h2>
-                <button 
-                    @click="showCustomerModal = false"
-                    class="text-gray-400 hover:text-gray-600"
+                <!-- Pending Payments Modal -->
+                <div 
+                    x-show="showPendingPaymentsModal"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    @click.self="closePendingPaymentsModal()"
+                    @keydown.escape.window="closePendingPaymentsModal()"
                 >
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
+                    <div 
+                        class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 space-y-4"
+                        @click.stop
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform scale-95"
+                        x-transition:enter-end="opacity-100 transform scale-100"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100 transform scale-100"
+                        x-transition:leave-end="opacity-0 transform scale-95"
+                    >
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Direct Paybill Payments</h2>
+                                <p class="text-sm text-gray-500 mt-1">Select a pending C2B payment to attach it to the current sale.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button 
+                                    type="button"
+                                    @click="loadPendingPayments()"
+                                    class="px-3 py-2 text-xs font-semibold text-blue-700 hover:text-blue-900 rounded-lg border border-blue-200 hover:border-blue-400 transition"
+                                >
+                                    🔄 Refresh
+                                </button>
+                                <button 
+                                    type="button"
+                                    @click="closePendingPaymentsModal()"
+                                    class="text-gray-400 hover:text-gray-600"
+                                >
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
 
-            <form @submit.prevent="createCustomer()">
-                <div class="space-y-4">
-                    <!-- Name -->
-                    <div>
-                        <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-2">
-                            Customer Name <span class="text-red-500">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="customer_name"
-                            x-model="newCustomer.name"
-                            required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Enter customer name"
-                        >
-                    </div>
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <p class="text-xs text-gray-600">
+                                    Showing <span class="font-semibold text-gray-800" x-text="filteredPendingPayments.length"></span> payment(s).
+                                </p>
+                                <input 
+                                    type="text" 
+                                    x-model="pendingPaymentSearch"
+                                    @input.debounce.300ms="searchPendingPayments()"
+                                    placeholder="Search by phone, reference, amount, or name..."
+                                    class="w-full md:w-80 px-3 py-2 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white"
+                                >
+                            </div>
 
-                    <!-- Phone Number -->
-                    <div>
-                        <label for="customer_phone" class="block text-sm font-medium text-gray-700 mb-2">
-                            Phone Number <span class="text-red-500">*</span>
-                            <span class="text-xs text-gray-500">(For M-Pesa)</span>
-                        </label>
-                        <input 
-                            type="tel" 
-                            id="customer_phone"
-                            x-model="newCustomer.phone"
-                            required
-                            pattern="[0-9]{10,12}"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="2547XXXXXXXX"
-                        >
-                        <p class="mt-1 text-xs text-gray-500">Format: 2547XXXXXXXX (e.g., 254712345678)</p>
-                    </div>
+                            <div class="max-h-72 overflow-y-auto space-y-2">
+                                <template x-for="payment in filteredPendingPayments" :key="payment.id">
+                                    <div 
+                                        @click="selectPendingPayment(payment)"
+                                        class="p-3 bg-white rounded-lg border-2 cursor-pointer transition-shadow"
+                                        :class="selectedPendingPayment && selectedPendingPayment.id === payment.id ? 'border-blue-500 shadow-lg' : 'border-blue-200 hover:border-blue-400 hover:shadow'"
+                                    >
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-semibold text-gray-900" x-text="'KES ' + formatPrice(payment.amount)"></p>
+                                                <p class="text-xs text-gray-600 mt-1" x-text="payment.phone_number || 'No phone provided'"></p>
+                                                <p class="text-xs text-gray-500 mt-0.5" x-text="payment.transaction_reference"></p>
+                                                <p class="text-[11px] text-gray-400 mt-0.5" x-text="'Account Ref: ' + (payment.account_reference || 'N/A')"></p>
+                                            </div>
+                                            <div class="flex flex-col items-end gap-2">
+                                                <span 
+                                                    class="px-2 py-1 text-[11px] rounded font-semibold"
+                                                    :class="Math.abs(payment.amount - cartTotal.total) <= 0.01 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
+                                                    x-text="Math.abs(payment.amount - cartTotal.total) <= 0.01 ? 'Perfect Match' : 'Amount Mismatch'"
+                                                ></span>
+                                                <p class="text-[11px] text-gray-400" x-text="payment.created_at_for_humans || ''"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
 
-                    <!-- Email (Auto-generated) -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p class="text-xs text-blue-800">
-                            <strong>Note:</strong> A unique email will be automatically generated for this customer.
-                        </p>
-                    </div>
+                            <div x-show="filteredPendingPayments.length === 0 && !loadingPendingPayments" class="text-center py-6">
+                                <p class="text-sm text-gray-500">No pending payments available.</p>
+                            </div>
 
-                    <!-- Error Message -->
-                    <div x-show="customerError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                        <p x-text="customerError"></p>
-                    </div>
-
-                    <!-- Buttons -->
-                    <div class="flex gap-3 pt-4">
-                        <button 
-                            type="button"
-                            @click="showCustomerModal = false"
-                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            type="submit"
-                            :disabled="creatingCustomer"
-                            class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                        >
-                            <span x-show="!creatingCustomer">Add Customer</span>
-                            <span x-show="creatingCustomer" class="flex items-center justify-center gap-2">
-                                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <div x-show="loadingPendingPayments" class="flex items-center justify-center py-6">
+                                <svg class="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Creating...
-                            </span>
-                        </button>
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-gray-500">
+                            Tip: selecting a payment will automatically populate the transaction reference and switch payment method to M-Pesa.
+                        </div>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Success Modal -->
-    <div 
-        x-show="showSuccessModal"
-        x-cloak
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        @click.self="closeSuccessModal()"
-        @keydown.escape.window="closeSuccessModal()"
-    >
-        <div 
-            class="bg-white rounded-lg shadow-xl max-w-md w-full p-6" 
-            @click.stop
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0 transform scale-95"
-            x-transition:enter-end="opacity-100 transform scale-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100 transform scale-100"
-            x-transition:leave-end="opacity-0 transform scale-95"
-        >
-            <div class="text-center">
-                <!-- Success Icon -->
-                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                    <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                <!-- Customer Modal -->
+                <div 
+                    x-show="showCustomerModal"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+                    @click.self="showCustomerModal = false"
+                    @keydown.escape.window="showCustomerModal = false"
+                >
+                    <div 
+                        class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+                        @click.stop
+                    >
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-gray-900">Add New Customer</h2>
+                            <button 
+                                @click="showCustomerModal = false"
+                                class="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <form @submit.prevent="createCustomer()">
+                            <div class="space-y-4">
+                                <!-- Name -->
+                                <div>
+                                    <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Customer Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input 
+                                        x-ref="customerName"
+                                        type="text" 
+                                        id="customer_name"
+                                        x-model="newCustomer.name"
+                                        required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Enter customer name"
+                                    >
+                                </div>
+
+                                <!-- Phone Number -->
+                                <div>
+                                    <label for="customer_phone" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Phone Number <span class="text-red-500">*</span>
+                                        <span class="text-xs text-gray-500">(For M-Pesa)</span>
+                                    </label>
+                                    <input 
+                                        type="tel" 
+                                        id="customer_phone"
+                                        x-model="newCustomer.phone"
+                                        required
+                                        pattern="[0-9]{10,12}"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="2547XXXXXXXX"
+                                    >
+                                    <p class="mt-1 text-xs text-gray-500">Format: 2547XXXXXXXX (e.g., 254712345678)</p>
+                                </div>
+
+                                <!-- Email (Auto-generated) -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <p class="text-xs text-blue-800">
+                                        <strong>Note:</strong> A unique email will be automatically generated for this customer.
+                                    </p>
+                                </div>
+
+                                <!-- Error Message -->
+                                <div x-show="customerError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                                    <p x-text="customerError"></p>
+                                </div>
+
+                                <!-- Buttons -->
+                                <div class="flex gap-3 pt-4">
+                                    <button 
+                                        type="button"
+                                        @click="showCustomerModal = false"
+                                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        :disabled="creatingCustomer"
+                                        class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    >
+                                        <span x-show="!creatingCustomer">Add Customer</span>
+                                        <span x-show="creatingCustomer" class="flex items-center justify-center gap-2">
+                                            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Creating...
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">Sale Completed!</h2>
-                <p class="text-gray-600 mb-1" x-show="completedSaleInvoice">
-                    Invoice: <span class="font-semibold" x-text="completedSaleInvoice"></span>
-                </p>
-                <p class="text-sm text-gray-500 mb-6">The receipt print dialog will open automatically. You can continue working below.</p>
-                
-                <!-- Buttons -->
-                <div class="flex gap-3">
-                    <button 
-                        @click="printReceipt()"
-                        class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition transform hover:scale-105 flex items-center justify-center gap-2"
+
+                <!-- Redeem Points Modal -->
+                <div 
+                    x-show="showRedeemPointsModal"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute inset-0 z-70 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+                    @click.self="closeRedeemPointsModal()"
+                    @keydown.escape.window="closeRedeemPointsModal()"
+                >
+                    <div 
+                        class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4"
+                        @click.stop
                     >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-lg font-bold text-gray-900">Redeem Points</h2>
+                                <p class="text-xs text-gray-500 mt-1">Convert customer points into an instant discount.</p>
+                            </div>
+                            <button 
+                                type="button"
+                                @click="closeRedeemPointsModal()"
+                                class="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                            <p class="text-sm font-medium text-indigo-800">
+                                Available Points: <span class="font-bold" x-text="(selectedCustomer?.loyalty_points || 0).toLocaleString()"></span>
+                            </p>
+                            <p class="text-xs text-indigo-600 mt-1">This equals KES <span x-text="formatPrice(selectedCustomer?.loyalty_points || 0)"></span> discount.</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Points to Redeem <span class="text-red-500">*</span>
+                                </label>
+                                <input 
+                                    type="number"
+                                    min="1"
+                                    :max="selectedCustomer ? selectedCustomer.loyalty_points : null"
+                                    x-model.number="redeemPointsForm.points"
+                                    x-ref="redeemPointsInput"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="Enter points to redeem"
+                                >
+                                <p class="text-xs text-gray-500 mt-1" x-show="selectedCustomer">
+                                    Max: <span x-text="(selectedCustomer.loyalty_points || 0).toLocaleString()"></span> points
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Discount Applied (KES)
+                                </label>
+                                <input 
+                                    type="text"
+                                    :value="formatPrice(Number(redeemPointsForm.points || 0))"
+                                    readonly
+                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-medium"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Notes (Optional)
+                                </label>
+                                <textarea 
+                                    rows="2"
+                                    x-model="redeemPointsForm.notes"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="Add context for this redemption..."
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div x-show="redeemPointsError" class="bg-red-100 border border-red-300 text-red-700 px-4 py-2 rounded text-sm" x-text="redeemPointsError"></div>
+
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button 
+                                type="button"
+                                @click="closeRedeemPointsModal()"
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                                :disabled="redeemingPoints"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button"
+                                @click="submitRedeemPoints()"
+                                class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                                :disabled="redeemingPoints"
+                            >
+                                <svg x-show="redeemingPoints" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="redeemingPoints ? 'Redeeming...' : 'Redeem Points'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adjust Points Modal -->
+                <div 
+                    x-show="showAdjustPointsModal"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute inset-0 z-70 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+                    @click.self="closeAdjustPointsModal()"
+                    @keydown.escape.window="closeAdjustPointsModal()"
+                >
+                    <div 
+                        class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4"
+                        @click.stop
+                    >
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-lg font-bold text-gray-900">Adjust Points</h2>
+                                <p class="text-xs text-gray-500 mt-1">Manually add or deduct points for this customer.</p>
+                            </div>
+                            <button 
+                                type="button"
+                                @click="closeAdjustPointsModal()"
+                                class="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Adjustment Type <span class="text-red-500">*</span>
+                                </label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button 
+                                        type="button"
+                                        @click="adjustPointsForm.type = 'add'"
+                                        :class="adjustPointsForm.type === 'add' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'"
+                                        class="px-3 py-2 rounded-lg border font-semibold text-sm transition"
+                                    >
+                                        Add Points
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        @click="adjustPointsForm.type = 'deduct'"
+                                        :class="adjustPointsForm.type === 'deduct' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300'"
+                                        class="px-3 py-2 rounded-lg border font-semibold text-sm transition"
+                                    >
+                                        Deduct Points
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Points <span class="text-red-500">*</span>
+                                </label>
+                                <input 
+                                    type="number"
+                                    min="1"
+                                    x-model.number="adjustPointsForm.points"
+                                    x-ref="adjustPointsInput"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter points"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Reason <span class="text-red-500">*</span>
+                                </label>
+                                <textarea 
+                                    rows="3"
+                                    x-model="adjustPointsForm.reason"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Explain why points are being adjusted..."
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div x-show="adjustPointsError" class="bg-red-100 border border-red-300 text-red-700 px-4 py-2 rounded text-sm" x-text="adjustPointsError"></div>
+
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button 
+                                type="button"
+                                @click="closeAdjustPointsModal()"
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                                :disabled="adjustingPoints"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button"
+                                @click="submitAdjustPoints()"
+                                class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                                :disabled="adjustingPoints"
+                            >
+                                <svg x-show="adjustingPoints" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="adjustingPoints ? 'Saving...' : 'Save Adjustment'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div 
+            x-show="showSuccessModal"
+            x-cloak
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            @click.self="closeSuccessModal()"
+            @keydown.escape.window="closeSuccessModal()"
+        >
+            <div 
+                class="bg-white rounded-lg shadow-xl max-w-md w-full p-6" 
+                @click.stop
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+            >
+                <div class="text-center">
+                    <!-- Success Icon -->
+                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                        <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
-                        Print Receipt
-                    </button>
-                    <button 
-                        @click="closeSuccessModal()"
-                        class="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition"
-                    >
-                        Continue
-                    </button>
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Sale Completed!</h2>
+                    <p class="text-gray-600 mb-1" x-show="completedSaleInvoice">
+                        Invoice: <span class="font-semibold" x-text="completedSaleInvoice"></span>
+                    </p>
+                    <p class="text-sm text-gray-500 mb-6">The receipt print dialog will open automatically. You can continue working below.</p>
+                    
+                    <!-- Buttons -->
+                    <div class="flex gap-3">
+                        <button 
+                        @click="printReceipt()"
+                            class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition transform hover:scale-105 flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            Print Receipt
+                        </button>
+                        <button 
+                            @click="closeSuccessModal()"
+                            class="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition"
+                        >
+                            Continue
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -782,12 +1182,13 @@ function posInterface() {
         customerSearch: '',
         selectedCustomer: null,
         paymentMethod: 'Cash',
+        useSTKPush: false,
         mpesaPhoneNumber: '',
         transactionReference: '',
         processingSTK: false,
-        tax: 0,
         discount: 0,
         processing: false,
+        showCartModal: false,
         showCustomerModal: false,
         newCustomer: {
             name: '',
@@ -804,16 +1205,31 @@ function posInterface() {
         pendingPaymentSearch: '',
         selectedPendingPayment: null,
         loadingPendingPayments: false,
+        showPendingPaymentsModal: false,
         showCompatibility: false,
         compatibilityProduct: null,
         notifications: [],
         showSuccessModal: false,
         completedSaleId: null,
         completedSaleInvoice: null,
+        showRedeemPointsModal: false,
+        showAdjustPointsModal: false,
+        redeemingPoints: false,
+        adjustingPoints: false,
+        redeemPointsForm: {
+            points: '',
+            notes: '',
+        },
+        adjustPointsForm: {
+            type: 'add',
+            points: '',
+            reason: '',
+        },
+        redeemPointsError: '',
+        adjustPointsError: '',
 
         cartTotal: {
             subtotal: 0,
-            tax: 0,
             discount: 0,
             total: 0,
         },
@@ -850,9 +1266,12 @@ function posInterface() {
             
             // Watch payment method changes
             this.$watch('paymentMethod', (method) => {
-                if (method !== 'M-Pesa' && this.selectedPendingPayment) {
-                    this.selectedPendingPayment = null;
-                    this.transactionReference = '';
+                if (method !== 'M-Pesa') {
+                    if (this.selectedPendingPayment) {
+                        this.selectedPendingPayment = null;
+                        this.transactionReference = '';
+                    }
+                    this.useSTKPush = false;
                 }
             });
             
@@ -1079,6 +1498,9 @@ function posInterface() {
             }
             
             this.calculateTotal();
+            if (!this.showCartModal) {
+                this.showCartModal = true;
+            }
         },
 
         removeFromCart(index) {
@@ -1129,9 +1551,11 @@ function posInterface() {
 
         calculateTotal() {
             this.cartTotal.subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            this.cartTotal.tax = this.tax || 0;
-            this.cartTotal.discount = this.discount || 0;
-            this.cartTotal.total = this.cartTotal.subtotal + this.cartTotal.tax - this.cartTotal.discount;
+            const discountValue = Math.max(0, Number(this.discount) || 0);
+            const cappedDiscount = Math.min(discountValue, this.cartTotal.subtotal);
+            this.cartTotal.discount = cappedDiscount;
+            this.discount = cappedDiscount;
+            this.cartTotal.total = this.cartTotal.subtotal - this.cartTotal.discount;
         },
 
         openNextOrderModal(detail = {}) {
@@ -1183,34 +1607,232 @@ function posInterface() {
         removeNotification(id) {
             this.notifications = this.notifications.filter(n => n.id !== id);
         },
+
+        openRedeemPointsModal() {
+            if (!this.selectedCustomer) {
+                this.showNotification('Select a customer first.', 'warning');
+                return;
+            }
+            this.redeemPointsForm = {
+                points: '',
+                notes: '',
+            };
+            this.redeemPointsError = '';
+            this.showRedeemPointsModal = true;
+
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    if (this.$refs.redeemPointsInput) {
+                        this.$refs.redeemPointsInput.focus();
+                    }
+                }, 50);
+            });
+        },
+
+        closeRedeemPointsModal() {
+            this.showRedeemPointsModal = false;
+            this.redeemingPoints = false;
+            this.redeemPointsError = '';
+        },
+
+        async submitRedeemPoints() {
+            if (!this.selectedCustomer) {
+                this.showNotification('Select a customer first.', 'warning');
+                return;
+            }
+
+            const availablePoints = Number(this.selectedCustomer.loyalty_points || 0);
+            const pointsToRedeem = Number(this.redeemPointsForm.points || 0);
+
+            if (!pointsToRedeem || pointsToRedeem <= 0) {
+                this.redeemPointsError = 'Enter the number of points to redeem.';
+                return;
+            }
+
+            if (pointsToRedeem > availablePoints) {
+                this.redeemPointsError = `Cannot redeem more than ${availablePoints} point(s).`;
+                return;
+            }
+
+            this.redeemingPoints = true;
+            this.redeemPointsError = '';
+
+            try {
+                const response = await fetch(`/loyalty-points/${this.selectedCustomer.id}/redeem`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        points: pointsToRedeem,
+                        discount_amount: pointsToRedeem, // 1 point = 1 KES
+                        notes: this.redeemPointsForm.notes || null,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    const errorMsg = data && (data.message || (data.errors ? Object.values(data.errors).flat()[0] : null)) || 'Failed to redeem points.';
+                    this.redeemPointsError = errorMsg;
+                    this.showNotification(errorMsg, 'error');
+                    return;
+                }
+
+                this.selectedCustomer.loyalty_points = Number(data.remaining_points || 0);
+                this.discount = Number(this.discount || 0) + Number(data.discount_amount || pointsToRedeem);
+                this.calculateTotal();
+
+                this.showNotification(data.message || 'Points redeemed successfully.', 'success');
+                this.closeRedeemPointsModal();
+            } catch (error) {
+                console.error('Redeem points error:', error);
+                this.redeemPointsError = 'An error occurred while redeeming points.';
+                this.showNotification('An error occurred while redeeming points.', 'error');
+            } finally {
+                this.redeemingPoints = false;
+            }
+        },
+
+        openAdjustPointsModal() {
+            if (!this.selectedCustomer) {
+                this.showNotification('Select a customer first.', 'warning');
+                return;
+            }
+            this.adjustPointsForm = {
+                type: 'add',
+                points: '',
+                reason: '',
+            };
+            this.adjustPointsError = '';
+            this.showAdjustPointsModal = true;
+
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    if (this.$refs.adjustPointsInput) {
+                        this.$refs.adjustPointsInput.focus();
+                    }
+                }, 50);
+            });
+        },
+
+        closeAdjustPointsModal() {
+            this.showAdjustPointsModal = false;
+            this.adjustingPoints = false;
+            this.adjustPointsError = '';
+        },
+
+        async submitAdjustPoints() {
+            if (!this.selectedCustomer) {
+                this.showNotification('Select a customer first.', 'warning');
+                return;
+            }
+
+            const points = Number(this.adjustPointsForm.points || 0);
+            if (!points || points <= 0) {
+                this.adjustPointsError = 'Enter the number of points.';
+                return;
+            }
+            if (!this.adjustPointsForm.reason || this.adjustPointsForm.reason.trim().length === 0) {
+                this.adjustPointsError = 'Provide a reason for the adjustment.';
+                return;
+            }
+
+            if (this.adjustPointsForm.type === 'deduct') {
+                const availablePoints = Number(this.selectedCustomer.loyalty_points || 0);
+                if (points > availablePoints) {
+                    this.adjustPointsError = `Cannot deduct more than ${availablePoints} point(s).`;
+                    return;
+                }
+            }
+
+            this.adjustingPoints = true;
+            this.adjustPointsError = '';
+
+            try {
+                const response = await fetch(`/loyalty-points/${this.selectedCustomer.id}/adjust`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        type: this.adjustPointsForm.type,
+                        points: points,
+                        reason: this.adjustPointsForm.reason,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    const errorMsg = data && (data.message || (data.errors ? Object.values(data.errors).flat()[0] : null)) || 'Failed to adjust points.';
+                    this.adjustPointsError = errorMsg;
+                    this.showNotification(errorMsg, 'error');
+                    return;
+                }
+
+                this.selectedCustomer.loyalty_points = Number(data.remaining_points || 0);
+                this.showNotification(data.message || 'Points adjusted successfully.', 'success');
+                this.closeAdjustPointsModal();
+            } catch (error) {
+                console.error('Adjust points error:', error);
+                this.adjustPointsError = 'An error occurred while adjusting points.';
+                this.showNotification('An error occurred while adjusting points.', 'error');
+            } finally {
+                this.adjustingPoints = false;
+            }
+        },
+
+        openCustomerModal(event = null) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            this.customerError = '';
+            this.newCustomer = { name: '', phone: '' };
+            this.showCustomerModal = true;
+
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    if (this.$refs.customerName) {
+                        this.$refs.customerName.focus();
+                    }
+                }, 50);
+            });
+        },
         
         printReceipt() {
-            if (this.completedSaleId) {
-                const printUrl = `/sales/${this.completedSaleId}/print`;
-                // Create a hidden iframe for printing
-                const iframe = document.createElement('iframe');
-                iframe.style.position = 'fixed';
-                iframe.style.right = '0';
-                iframe.style.bottom = '0';
-                iframe.style.width = '0';
-                iframe.style.height = '0';
-                iframe.style.border = '0';
-                iframe.src = printUrl;
-                
-                document.body.appendChild(iframe);
-                
-                // Wait for iframe to load, then trigger print
-                iframe.onload = function() {
-                    setTimeout(() => {
-                        iframe.contentWindow.focus();
-                        iframe.contentWindow.print();
-                        // Remove iframe after printing
-                        setTimeout(() => {
-                            document.body.removeChild(iframe);
-                        }, 1000);
-                    }, 500);
-                };
+            if (!this.completedSaleId) {
+                return;
             }
+
+            const printUrl = `/sales/${this.completedSaleId}/print`;
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            iframe.src = printUrl;
+            
+            document.body.appendChild(iframe);
+            
+            iframe.onload = () => {
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                    }, 800);
+                }, 400);
+            };
         },
         
         closeSuccessModal() {
@@ -1221,16 +1843,20 @@ function posInterface() {
         
         resetForm() {
             this.cart = [];
+            this.products = [];
             this.selectedCustomer = null;
             this.customerSearch = '';
+            this.searchQuery = '';
+            this.barcodeQuery = '';
             this.paymentMethod = 'Cash';
+            this.useSTKPush = false;
             this.mpesaPhoneNumber = '';
             this.transactionReference = '';
             this.selectedPendingPayment = null;
             this.pendingPaymentSearch = '';
-            this.tax = 0;
             this.discount = 0;
             this.calculateTotal();
+            this.showCartModal = false;
             
             // Reload pending payments to refresh the list
             this.loadPendingPayments();
@@ -1309,7 +1935,7 @@ function posInterface() {
                         transaction_reference: this.selectedPendingPayment ? this.selectedPendingPayment.transaction_reference : (this.transactionReference || null),
                         pending_payment_id: this.selectedPendingPayment ? this.selectedPendingPayment.id : null,
                         subtotal: this.cartTotal.subtotal,
-                        tax: this.cartTotal.tax,
+                        tax: 0,
                         discount: this.cartTotal.discount,
                         total_amount: this.cartTotal.total,
                     }),
@@ -1355,11 +1981,6 @@ function posInterface() {
                     
                     // Show success modal
                     this.showSuccessModal = true;
-                    
-                    // Auto-open print dialog after a short delay (using iframe - no new page)
-                    setTimeout(() => {
-                        this.printReceipt();
-                    }, 800);
                 } else {
                     this.showNotification(saleData.message || 'Checkout failed', 'error');
                 }
@@ -1580,7 +2201,7 @@ function posInterface() {
                 if (response.ok) {
                     const data = await response.json();
                     this.pendingPayments = Array.isArray(data) ? data : (data.data || []);
-                    this.filteredPendingPayments = this.pendingPayments;
+                    this.searchPendingPayments();
                 } else {
                     console.error('Failed to load pending payments');
                 }
@@ -1589,6 +2210,19 @@ function posInterface() {
             } finally {
                 this.loadingPendingPayments = false;
             }
+        },
+
+        openPendingPaymentsModal() {
+            this.showPendingPaymentsModal = true;
+            if (!this.pendingPayments.length) {
+                this.loadPendingPayments();
+            } else {
+                this.searchPendingPayments();
+            }
+        },
+
+        closePendingPaymentsModal() {
+            this.showPendingPaymentsModal = false;
         },
 
         searchPendingPayments() {
@@ -1613,6 +2247,7 @@ function posInterface() {
         selectPendingPayment(payment) {
             this.selectedPendingPayment = payment;
             this.transactionReference = payment.transaction_reference;
+            this.useSTKPush = false;
             
             // Automatically set payment method to M-Pesa if C2B payment is selected
             if (this.paymentMethod !== 'M-Pesa') {
@@ -1621,6 +2256,11 @@ function posInterface() {
             
             // Clear STK push fields when C2B payment is selected
             this.mpesaPhoneNumber = '';
+
+            if (this.showPendingPaymentsModal) {
+                this.closePendingPaymentsModal();
+                this.showNotification('Payment assigned to sale.', 'success');
+            }
         },
 
         toggleCompatibility(product) {

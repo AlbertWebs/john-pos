@@ -39,6 +39,16 @@
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">{{ $sale->invoice_number }}</div>
+                            @if($sale->returns->isNotEmpty())
+                            <div class="mt-2 flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Returned Items
+                                </span>
+                                <span class="text-xs text-gray-500">
+                                    {{ $sale->returns->sum('quantity_returned') }} item(s) returned
+                                </span>
+                            </div>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">{{ $sale->date->format('M d, Y') }}</div>

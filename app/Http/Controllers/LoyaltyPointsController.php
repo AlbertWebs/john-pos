@@ -84,9 +84,21 @@ class LoyaltyPointsController extends Controller
 
         // Deduct points
         $customer->decrement('loyalty_points', $validated['points']);
+        $customer->refresh();
+
+        $message = "Successfully redeemed {$validated['points']} points for KES {$validated['discount_amount']} discount.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'remaining_points' => $customer->loyalty_points,
+                'discount_amount' => $validated['discount_amount'],
+            ]);
+        }
 
         return redirect()->route('loyalty-points.show', $customer)
-            ->with('success', "Successfully redeemed {$validated['points']} points for KES {$validated['discount_amount']} discount.");
+            ->with('success', $message);
     }
 
     public function adjust(Request $request, Customer $customer)
@@ -114,11 +126,27 @@ class LoyaltyPointsController extends Controller
             
             DB::commit();
 
+            $customer->refresh();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'remaining_points' => $customer->loyalty_points,
+                ]);
+            }
+
             return redirect()->route('loyalty-points.show', $customer)
                 ->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
