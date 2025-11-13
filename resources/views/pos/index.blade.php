@@ -301,7 +301,7 @@
             @click.self="showCartModal = false"
             @keydown.escape.window="showCartModal = false"
         >
-            <div class="relative w-[98vw] max-w-6xl max-h-[100vh] bg-gradient-to-br from-white via-indigo-50 to-purple-50 rounded-3xl shadow-2xl border border-indigo-100 flex flex-col overflow-hidden">
+            <div class="relative w-[95vw] max-w-6xl max-h-[100vh] bg-gradient-to-br from-white via-indigo-50 to-purple-50 rounded-3xl shadow-2xl border border-indigo-100 flex flex-col overflow-hidden">
                 <div class="flex items-start justify-between px-6 py-5 border-b border-indigo-100 bg-white/70 backdrop-blur">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">Shopping Cart & Checkout</h2>
@@ -1406,6 +1406,10 @@ function posInterface() {
         },
 
         async searchByBarcode() {
+            if (this.scanningBarcode) {
+                return;
+            }
+
             if (!this.barcodeQuery || this.barcodeQuery.trim().length === 0) {
                 return;
             }
