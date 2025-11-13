@@ -1,0 +1,27 @@
+{
+  "name": "Johlly POS",
+  "short_name": "JohllyPOS",
+  "description": "Manage sales, inventory, and customers with the Johlly point of sale platform.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/app-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "32x32 48x48 64x64",
+      "purpose": "any"
+    }
+  ]
+}
+
