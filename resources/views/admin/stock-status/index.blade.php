@@ -22,6 +22,67 @@
         </form>
     </div>
 
+    <!-- Cron Job Controls -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col gap-2 mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Cron Job Controls</h2>
+            <p class="text-sm text-gray-600">Manually dispatch scheduled jobs via the queue worker.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            <form method="POST" action="{{ route('admin.stock-status.run-job') }}">
+                @csrf
+                <input type="hidden" name="job" value="all">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-white bg-slate-900 hover:bg-slate-800 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5h8v14H5z" />
+                    </svg>
+                    Run All Cron Jobs
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.stock-status.run-job') }}">
+                @csrf
+                <input type="hidden" name="job" value="daily_sales">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Daily Sales Report
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.stock-status.run-job') }}">
+                @csrf
+                <input type="hidden" name="job" value="hourly_stock">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Hourly Stock Status
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.stock-status.run-job') }}">
+                @csrf
+                <input type="hidden" name="job" value="low_stock_alert">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-white bg-orange-600 hover:bg-orange-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Low Stock Alerts
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.stock-status.run-job') }}">
+                @csrf
+                <input type="hidden" name="job" value="next_order">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-white bg-purple-600 hover:bg-purple-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
+                    </svg>
+                    Next Order Reminders
+                </button>
+            </form>
+        </div>
+        <p class="text-xs text-gray-500 mt-4">Jobs are queued; keep a worker running via <code>php artisan queue:work</code>.</p>
+    </div>
+
     @if(session('success'))
     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
         {{ session('success') }}

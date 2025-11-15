@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Inventory;
 use App\Mail\StockStatusNotification;
+use App\Jobs\SendDailySalesReport;
+use App\Jobs\SendHourlyStockStatus;
+use App\Jobs\SendLowStockAlert;
+use App\Jobs\SendNextOrderReminder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Artisan;
 
 class StockStatusController extends Controller
 {
@@ -86,6 +91,50 @@ class StockStatusController extends Controller
             return back()->with('success', "Stock status report sent successfully to {$notificationEmail}.");
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to send email: ' . $e->getMessage());
+        }
+    }
+
+    public function runJob(Request $request)
+    {
+        if (!Auth::check() || Auth::user()->isCashier()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $request->validate([
+            'job' => 'required|string',
+        ]);
+
+        $job = $request->input('job');
+
+        try {
+            switch ($job) {
+                case 'daily_sales':
+                    dispatch(new SendDailySalesReport);
+                    $message = 'Daily Sales Report job dispatched.';
+                    break;
+                case 'hourly_stock':
+                    dispatch(new SendHourlyStockStatus);
+                    $message = 'Hourly Stock Status job dispatched.';
+                    break;
+                case 'low_stock_alert':
+                    dispatch(new SendLowStockAlert);
+                    $message = 'Low Stock Alert job dispatched.';
+                    break;
+                case 'next_order':
+                    dispatch(new SendNextOrderReminder);
+                    $message = 'Next Order Reminder job dispatched.';
+                    break;
+                case 'all':
+                    Artisan::call('jobs:run-all');
+                    $message = 'All scheduled jobs dispatched.';
+                    break;
+                default:
+                    return back()->with('error', 'Invalid job selected.');
+            }
+
+            return back()->with('success', $message . ' Ensure the queue worker is running to process jobs.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to run job: ' . $e->getMessage());
         }
     }
 }
