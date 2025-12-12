@@ -523,6 +523,28 @@
                                     </div>
                                 </div>
 
+                                <!-- eTIMS Receipt Checkbox -->
+                                <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4">
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            x-model="generateEtimsReceipt"
+                                            @change="calculateTotal()"
+                                            class="w-5 h-5 text-yellow-600 border-2 border-yellow-400 rounded focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+                                        >
+                                        <div class="flex-1">
+                                            <span class="font-semibold text-yellow-900">Generate eTIMS Receipt</span>
+                                            <p class="text-xs text-yellow-700 mt-1">Apply 16% VAT to all items for KRA compliance</p>
+                                        </div>
+                                    </label>
+                                    <div x-show="generateEtimsReceipt && cartTotal.vat > 0" class="mt-3 pt-3 border-t border-yellow-300">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-yellow-800 font-medium">VAT (16%):</span>
+                                            <span class="text-yellow-900 font-bold" x-text="'KES ' + formatPrice(cartTotal.vat)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="space-y-3">
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <button 
@@ -1228,9 +1250,11 @@ function posInterface() {
         redeemPointsError: '',
         adjustPointsError: '',
 
+        generateEtimsReceipt: false,
         cartTotal: {
             subtotal: 0,
             discount: 0,
+            vat: 0,
             total: 0,
         },
 
@@ -1859,6 +1883,7 @@ function posInterface() {
             this.selectedPendingPayment = null;
             this.pendingPaymentSearch = '';
             this.discount = 0;
+            this.generateEtimsReceipt = false;
             this.calculateTotal();
             this.showCartModal = false;
             
@@ -1939,15 +1964,21 @@ function posInterface() {
                         transaction_reference: this.selectedPendingPayment ? this.selectedPendingPayment.transaction_reference : (this.transactionReference || null),
                         pending_payment_id: this.selectedPendingPayment ? this.selectedPendingPayment.id : null,
                         subtotal: this.cartTotal.subtotal,
-                        tax: 0,
+                        tax: this.cartTotal.vat,
                         discount: this.cartTotal.discount,
                         total_amount: this.cartTotal.total,
+                        generate_etims_receipt: this.generateEtimsReceipt,
                     }),
                 });
 
                 const saleData = await saleResponse.json();
 
                 if (saleData.success) {
+                    // Show eTIMS message if present
+                    if (saleData.etims_message) {
+                        this.showNotification(saleData.etims_message, saleData.etims_message.includes('failed') || saleData.etims_message.includes('Error') ? 'warning' : 'success');
+                    }
+                    
                     // If C2B payment was selected, allocate it to the sale
                     if (this.selectedPendingPayment && this.paymentMethod === 'M-Pesa') {
                         try {

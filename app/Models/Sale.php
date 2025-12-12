@@ -19,6 +19,11 @@ class Sale extends Model
         'discount',
         'total_amount',
         'payment_status',
+        'generate_etims_receipt',
+        'etims_invoice_number',
+        'etims_uuid',
+        'etims_approval_date',
+        'etims_verified',
     ];
 
     protected function casts(): array
@@ -29,6 +34,9 @@ class Sale extends Model
             'tax' => 'decimal:2',
             'discount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'generate_etims_receipt' => 'boolean',
+            'etims_verified' => 'boolean',
+            'etims_approval_date' => 'datetime',
         ];
     }
 

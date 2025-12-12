@@ -7,9 +7,11 @@ use App\Models\SaleItem;
 use App\Models\Inventory;
 use App\Models\Payment;
 use App\Models\InventoryMovement;
+use App\Services\ETimsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
@@ -38,6 +40,7 @@ class SaleController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'total_amount' => 'required|numeric|min:0',
             'pending_payment_id' => 'nullable|exists:pending_payments,id',
+            'generate_etims_receipt' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -50,6 +53,8 @@ class SaleController extends Controller
             // Otherwise, set to 'completed' for immediate payment
             $paymentStatus = $request->filled('pending_payment_id') ? 'pending' : 'completed';
             
+            $generateEtimsReceipt = $request->boolean('generate_etims_receipt', false);
+            
             $sale = Sale::create([
                 'invoice_number' => $invoiceNumber,
                 'customer_id' => $validated['customer_id'] ?? null,
@@ -60,6 +65,7 @@ class SaleController extends Controller
                 'discount' => $validated['discount'] ?? 0,
                 'total_amount' => $validated['total_amount'],
                 'payment_status' => $paymentStatus,
+                'generate_etims_receipt' => $generateEtimsReceipt,
             ]);
 
             // Create sale items and update inventory
@@ -121,11 +127,37 @@ class SaleController extends Controller
 
             DB::commit();
 
+            // Send to eTIMS if requested
+            $etimsMessage = null;
+            if ($generateEtimsReceipt && $validated['tax'] > 0) {
+                try {
+                    $etimsService = new ETimsService();
+                    $etimsResult = $etimsService->sendInvoice($sale);
+                    
+                    if ($etimsResult['success']) {
+                        $etimsMessage = 'Your eTIMS request has been sent. Awaiting confirmation from KRA…';
+                    } else {
+                        $etimsMessage = 'eTIMS request failed: ' . $etimsResult['message'];
+                        Log::warning('eTIMS send failed', [
+                            'sale_id' => $sale->id,
+                            'error' => $etimsResult['message'],
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    $etimsMessage = 'Error sending to eTIMS: ' . $e->getMessage();
+                    Log::error('eTIMS exception', [
+                        'sale_id' => $sale->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'sale_id' => $sale->id,
                 'invoice_number' => $sale->invoice_number,
                 'redirect_url' => route('sales.show', $sale),
+                'etims_message' => $etimsMessage,
             ]);
 
         } catch (\Exception $e) {

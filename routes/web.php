@@ -46,6 +46,9 @@ Route::middleware('guest')->group(function () {
 // M-Pesa Callback (must be public - no auth required)
 Route::post('/mpesa/callback', [\App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.callback');
 
+// eTIMS Callback (must be public - no auth required)
+Route::post('/etims/callback', [\App\Http\Controllers\ETimsCallbackController::class, 'handle'])->name('etims.callback');
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
     

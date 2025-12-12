@@ -169,6 +169,9 @@
                 @if(isset($settings['website']))
                 <p style="margin: 1px 0;">{{ strlen($settings['website']) > 35 ? substr($settings['website'], 0, 32) . '...' : $settings['website'] }}</p>
                 @endif
+                @if(isset($settings['kra_pin']))
+                <p style="margin: 1px 0; font-weight: bold;">KRA PIN: {{ $settings['kra_pin'] }}</p>
+                @endif
             </div>
         </div>
 
@@ -238,7 +241,7 @@
             </div>
             @if($sale->tax > 0)
             <div class="total-row">
-                <span>Tax:</span>
+                <span>VAT (16%):</span>
                 <span>KES {{ number_format($sale->tax, 2) }}</span>
             </div>
             @endif
@@ -269,6 +272,31 @@
             </div>
             @endif
             @endforeach
+        </div>
+        @endif
+
+        <!-- eTIMS Information -->
+        @if($sale->generate_etims_receipt)
+        <div class="payment-info" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #000;">
+            <div class="label" style="margin-bottom: 4px;">eTIMS Information:</div>
+            @if($sale->etims_verified)
+                <div style="font-size: 7px; margin-bottom: 2px;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">✓ eTIMS Verified</div>
+                    @if($sale->etims_invoice_number)
+                    <div style="margin-bottom: 1px;">Invoice: {{ $sale->etims_invoice_number }}</div>
+                    @endif
+                    @if($sale->etims_uuid)
+                    <div style="margin-bottom: 1px;">UUID: {{ strlen($sale->etims_uuid) > 20 ? substr($sale->etims_uuid, 0, 17) . '...' : $sale->etims_uuid }}</div>
+                    @endif
+                    @if($sale->etims_approval_date)
+                    <div>Approved: {{ $sale->etims_approval_date->format('d/m/Y H:i') }}</div>
+                    @endif
+                </div>
+            @else
+                <div style="font-size: 7px;">
+                    Status: Awaiting confirmation from KRA...
+                </div>
+            @endif
         </div>
         @endif
 

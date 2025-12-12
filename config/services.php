@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'etims' => [
+        'api_url' => env('ETIMS_API_URL', 'https://etims-api.kra.go.ke/api'),
+        'client_id' => env('ETIMS_CLIENT_ID'),
+        'client_secret' => env('ETIMS_CLIENT_SECRET'),
+    ],
+
 ];

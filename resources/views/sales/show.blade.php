@@ -27,6 +27,9 @@
                 @if(isset($settings['website']))
                 <p>Website: {{ $settings['website'] }}</p>
                 @endif
+                @if(isset($settings['kra_pin']))
+                <p class="font-semibold">KRA PIN: {{ $settings['kra_pin'] }}</p>
+                @endif
             </div>
         </div>
 
@@ -95,7 +98,7 @@
                 </div>
                 @if($sale->tax > 0)
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-600">Tax</span>
+                    <span class="text-gray-600">VAT (16%)</span>
                     <span class="font-medium text-gray-900">KES {{ number_format($sale->tax, 2) }}</span>
                 </div>
                 @endif
@@ -125,6 +128,38 @@
             <p class="text-xs text-gray-500 mt-1">Ref: {{ $payment->transaction_reference }}</p>
             @endif
             @endforeach
+        </div>
+        @endif
+
+        <!-- eTIMS Information -->
+        @if($sale->generate_etims_receipt)
+        <div class="mt-6 pt-6 border-t">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">eTIMS Information</h3>
+            @if($sale->etims_verified)
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                    <div class="flex items-center gap-2 text-green-800">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="font-semibold">eTIMS Verified</span>
+                    </div>
+                    @if($sale->etims_invoice_number)
+                    <p class="text-xs text-gray-700"><span class="font-semibold">eTIMS Invoice Number:</span> {{ $sale->etims_invoice_number }}</p>
+                    @endif
+                    @if($sale->etims_uuid)
+                    <p class="text-xs text-gray-700"><span class="font-semibold">UUID:</span> {{ $sale->etims_uuid }}</p>
+                    @endif
+                    @if($sale->etims_approval_date)
+                    <p class="text-xs text-gray-700"><span class="font-semibold">Approval Date:</span> {{ $sale->etims_approval_date->format('d/m/Y H:i') }}</p>
+                    @endif
+                </div>
+            @else
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p class="text-xs text-yellow-800">
+                        <span class="font-semibold">Status:</span> Awaiting confirmation from KRA...
+                    </p>
+                </div>
+            @endif
         </div>
         @endif
 

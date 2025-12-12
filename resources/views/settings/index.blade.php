@@ -92,6 +92,23 @@
                         @enderror
                     </div>
 
+                    <div>
+                        <label for="kra_pin" class="block text-sm font-medium text-gray-700 mb-2">KRA PIN</label>
+                        <input 
+                            type="text" 
+                            name="kra_pin" 
+                            id="kra_pin"
+                            value="{{ old('kra_pin', $settings['kra_pin'] ?? '') }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('kra_pin') border-red-500 @enderror"
+                            placeholder="P051234567K"
+                            maxlength="20"
+                        >
+                        <p class="mt-1 text-xs text-gray-500">Required for eTIMS receipt generation</p>
+                        @error('kra_pin')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div class="md:col-span-2">
                         <label for="logo" class="block text-sm font-medium text-gray-700 mb-2">Company Logo</label>
                         <div class="flex items-center gap-4">

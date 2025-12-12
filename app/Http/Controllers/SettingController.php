@@ -38,6 +38,7 @@ class SettingController extends Controller
             'tax_rate' => 'nullable|numeric|min:0|max:100',
             'currency' => 'nullable|string|max:10',
             'next_order_reminder_frequency' => 'required|in:daily,weekly',
+            'kra_pin' => 'nullable|string|max:20',
         ]);
 
         DB::beginTransaction();
