@@ -70,6 +70,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/bulk-delete', [InventoryController::class, 'bulkDelete'])
         ->name('inventory.bulkDelete');
     
+    // Barcode Management
+    Route::get('/barcodes', [\App\Http\Controllers\BarcodeController::class, 'index'])->name('barcodes.index');
+    Route::post('/barcodes/generate/{inventory}', [\App\Http\Controllers\BarcodeController::class, 'generate'])->name('barcodes.generate');
+    Route::post('/barcodes/generate-bulk', [\App\Http\Controllers\BarcodeController::class, 'generateBulk'])->name('barcodes.generateBulk');
+    Route::post('/barcodes/generate-all', [\App\Http\Controllers\BarcodeController::class, 'generateAll'])->name('barcodes.generateAll');
+    Route::get('/barcodes/download-pdf', [\App\Http\Controllers\BarcodeController::class, 'downloadPDF'])->name('barcodes.downloadPDF');
+    
     // Supporting Tables (AJAX endpoints for dropdowns)
     Route::get('/api/categories', [CategoryController::class, 'index'])->name('api.categories');
     Route::get('/api/brands', [BrandController::class, 'index'])->name('api.brands');
