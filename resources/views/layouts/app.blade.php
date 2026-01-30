@@ -149,6 +149,21 @@
                 </div>
                 @endcan
 
+                <!-- Barcodes Section -->
+                @can('manage inventory')
+                <div class="mt-4 pt-4 border-t border-blue-400/30">
+                    <a href="{{ route('barcodes.index') }}" 
+                       class="flex items-center {{ request()->routeIs('barcodes.*') ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:bg-white/10' }} px-4 py-3 rounded-xl mb-2 transition-all group"
+                       title="Barcodes"
+                    >
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed" class="font-medium">Barcodes</span>
+                    </a>
+                </div>
+                @endcan
+
                 <!-- Sales Section -->
                 <div class="mt-4 pt-4 border-t border-blue-400/30">
                     <a href="{{ route('pos.index') }}" 
