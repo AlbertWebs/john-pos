@@ -175,7 +175,6 @@
                 @if($item->category)
                 <div>{{ $item->category->name }}</div>
                 @endif
-                <div class="price">KES {{ number_format($item->selling_price, 2) }}</div>
             </div>
         </div>
     </div>
