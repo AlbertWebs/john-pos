@@ -67,11 +67,30 @@
         }
         
         .part-number {
-            font-size: 6px;
-            color: #333;
+            font-size: 7px;
+            font-weight: bold;
+            color: #000;
+            margin-top: 0.5mm;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        
+        .part-number-label {
+            font-size: 6px;
+            color: #666;
+            margin-right: 2px;
+        }
+        
+        .stock-quantity {
+            font-size: 7px;
+            font-weight: bold;
+            color: #000;
+            margin-top: 0.5mm;
+            padding: 0.5mm 2mm;
+            background: #f0f0f0;
+            border: 1px solid #000;
+            display: inline-block;
         }
         
         .barcode-section {
@@ -170,7 +189,11 @@
         <div class="sticker-content">
             <div class="sticker-header">
                 <div class="item-name">{{ Str::limit($item->name, 25) }}</div>
-                <div class="part-number">{{ Str::limit($item->part_number, 20) }}</div>
+                @if($item->part_number)
+                <div class="part-number">
+                    <span class="part-number-label">Part #:</span>{{ Str::limit($item->part_number, 20) }}
+                </div>
+                @endif
             </div>
             
             <div class="barcode-section">
@@ -182,6 +205,11 @@
                     @endif
                 </div>
                 <div class="barcode-number">{{ Str::limit($item->barcode, 25) }}</div>
+                @if($item->part_number)
+                <div class="part-number" style="margin-top: 1mm; font-size: 7px;">
+                    <span class="part-number-label">PN:</span>{{ Str::limit($item->part_number, 18) }}
+                </div>
+                @endif
             </div>
             
             <div class="sticker-footer">

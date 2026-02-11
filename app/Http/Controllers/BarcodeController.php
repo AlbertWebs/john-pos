@@ -178,41 +178,174 @@ class BarcodeController extends Controller
         }
 
         if ($items->isEmpty()) {
-            return back()->with('error', 'No items with barcodes found to print');
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No items with barcodes found to print'
+                ], 404);
+            }
+            return redirect()->route('barcodes.index')->with('error', 'No items with barcodes found to print');
         }
 
-        // Generate barcode images for each item
-        $generator = new BarcodeGeneratorPNG();
-        $itemsWithBarcodes = $items->map(function($item) use ($generator) {
-            try {
-                // Generate CODE128 barcode image - optimized size for stickers
-                // Width factor 1.5 (thinner bars), height 30px for better scanning
-                $barcodeImage = $generator->getBarcode($item->barcode, $generator::TYPE_CODE_128, 1.5, 30);
-                $item->barcode_image_base64 = 'data:image/png;base64,' . base64_encode($barcodeImage);
-            } catch (\Exception $e) {
-                // If barcode generation fails, set to null
-                $item->barcode_image_base64 = null;
+        try {
+            // Generate barcode images for each item
+            $generator = new BarcodeGeneratorPNG();
+            $itemsWithBarcodes = $items->map(function($item) use ($generator) {
+                try {
+                    // Generate CODE128 barcode image - optimized size for stickers
+                    // Width factor 1.5 (thinner bars), height 30px for better scanning
+                    $barcodeImage = $generator->getBarcode($item->barcode, $generator::TYPE_CODE_128, 1.5, 30);
+                    $item->barcode_image_base64 = 'data:image/png;base64,' . base64_encode($barcodeImage);
+                } catch (\Exception $e) {
+                    // If barcode generation fails, set to null
+                    \Log::warning('Failed to generate barcode image for item ' . $item->id . ': ' . $e->getMessage());
+                    $item->barcode_image_base64 = null;
+                }
+                return $item;
+            });
+
+            // Sort items by stock_quantity descending, then by name
+            $itemsWithBarcodes = $itemsWithBarcodes->sortBy([
+                ['stock_quantity', 'desc'],
+                ['name', 'asc']
+            ])->values();
+
+            // Generate stickers HTML only (no summary)
+            $html = view('barcodes.pdf', ['items' => $itemsWithBarcodes])->render();
+
+            $options = new Options();
+            $options->set('defaultFont', 'DejaVu Sans');
+            $options->set('isRemoteEnabled', false); // Disable remote resources to save memory
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isPhpEnabled', false);
+            $options->set('dpi', 96); // Lower DPI to reduce memory usage
+            
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            return response()->streamDownload(function() use ($dompdf) {
+                echo $dompdf->output();
+            }, 'barcode-stickers-' . now()->format('Y-m-d') . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('PDF Generation Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error generating PDF: ' . $e->getMessage()
+                ], 500);
             }
-            return $item;
-        });
+            
+            return redirect()->route('barcodes.index')
+                ->with('error', 'Error generating PDF: ' . $e->getMessage());
+        }
+    }
 
-        $html = view('barcodes.pdf', ['items' => $itemsWithBarcodes])->render();
-
-        $options = new Options();
-        $options->set('defaultFont', 'DejaVu Sans');
-        $options->set('isRemoteEnabled', false); // Disable remote resources to save memory
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isPhpEnabled', false);
-        $options->set('dpi', 96); // Lower DPI to reduce memory usage
+    /**
+     * Download PDF with printing instructions/summary
+     */
+    public function downloadSummary(Request $request)
+    {
+        // Increase memory limit for large PDF generation
+        ini_set('memory_limit', '1024M'); // Increased to 1GB
+        ini_set('max_execution_time', 300); // 5 minutes
         
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        // Support both GET and POST requests
+        if ($request->isMethod('post')) {
+            if ($request->has('item_ids_json')) {
+                $itemIds = json_decode($request->input('item_ids_json'), true) ?? [];
+            } else {
+                $itemIds = $request->input('item_ids', []);
+            }
+        } else {
+            $itemIds = $request->input('item_ids', []);
+        }
+        
+        // Ensure item_ids is an array
+        if (!is_array($itemIds)) {
+            $itemIds = [];
+        }
+        
+        if (empty($itemIds)) {
+            // Get all items with barcodes if none specified, but limit to prevent memory issues
+            $limit = $request->input('limit', 500); // Default limit of 500 items
+            $items = Inventory::whereNotNull('barcode')
+                ->where('barcode', '!=', '')
+                ->select('id', 'name', 'part_number', 'barcode', 'stock_quantity', 'category_id') // Select only needed columns
+                ->with(['category:id,name']) // Only load category id and name
+                ->orderBy('stock_quantity', 'desc')
+                ->orderBy('name', 'asc')
+                ->limit($limit)
+                ->get();
+        } else {
+            // Limit item IDs to prevent memory issues
+            $limit = $request->input('limit', 500); // Default limit of 500 items
+            $limitedItemIds = array_slice($itemIds, 0, $limit);
+            $items = Inventory::whereIn('id', $limitedItemIds)
+                ->whereNotNull('barcode')
+                ->where('barcode', '!=', '')
+                ->select('id', 'name', 'part_number', 'barcode', 'stock_quantity', 'category_id') // Select only needed columns
+                ->with(['category:id,name']) // Only load category id and name
+                ->orderBy('stock_quantity', 'desc')
+                ->orderBy('name', 'asc')
+                ->get();
+        }
 
-        return response()->streamDownload(function() use ($dompdf) {
-            echo $dompdf->output();
-        }, 'barcode-stickers-' . now()->format('Y-m-d') . '.pdf');
+        if ($items->isEmpty()) {
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No items with barcodes found'
+                ], 404);
+            }
+            return redirect()->route('barcodes.index')->with('error', 'No items with barcodes found');
+        }
+
+        try {
+            // Items are already sorted by the query, no need to sort again
+            // Generate summary sheet HTML only
+            $html = view('barcodes.summary', ['items' => $items])->render();
+
+            $options = new Options();
+            $options->set('defaultFont', 'DejaVu Sans');
+            $options->set('isRemoteEnabled', false);
+            $options->set('isHtml5ParserEnabled', false); // Disable HTML5 parser to save memory
+            $options->set('isPhpEnabled', false);
+            $options->set('dpi', 72); // Lower DPI to reduce memory usage
+            $options->set('enableFontSubsetting', true); // Enable font subsetting to reduce memory
+            $options->set('chroot', base_path());
+            
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html, 'UTF-8');
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            return response()->streamDownload(function() use ($dompdf) {
+                echo $dompdf->output();
+            }, 'barcode-instructions-' . now()->format('Y-m-d') . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error('Summary PDF Generation Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error generating summary PDF: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->route('barcodes.index')
+                ->with('error', 'Error generating summary PDF: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -309,6 +442,7 @@ class BarcodeController extends Controller
             return $item;
         });
 
+        // Generate stickers HTML only (no summary)
         $html = view('barcodes.pdf', ['items' => $itemsWithBarcodes])->render();
 
         $options = new Options();
@@ -331,6 +465,41 @@ class BarcodeController extends Controller
         return response()->streamDownload(function() use ($dompdf) {
             echo $dompdf->output();
         }, $filename . '.pdf');
+    }
+
+    /**
+     * Undo/Remove barcodes created in the last 24 hours
+     */
+    public function undoLast24Hours(Request $request)
+    {
+        $hours = $request->input('hours', 24);
+        
+        // Find items with barcodes that were updated in the last X hours
+        $items = Inventory::whereNotNull('barcode')
+            ->where('barcode', '!=', '')
+            ->where('updated_at', '>=', now()->subHours($hours))
+            ->get();
+        
+        $count = $items->count();
+        
+        if ($count === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "No barcodes found that were created in the last {$hours} hours",
+            ], 404);
+        }
+        
+        // Clear barcodes
+        Inventory::whereNotNull('barcode')
+            ->where('barcode', '!=', '')
+            ->where('updated_at', '>=', now()->subHours($hours))
+            ->update(['barcode' => null]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Removed {$count} barcode(s) created in the last {$hours} hours",
+            'removed' => $count,
+        ]);
     }
 
     /**

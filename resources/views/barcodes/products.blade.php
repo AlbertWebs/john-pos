@@ -30,14 +30,35 @@
                 </svg>
                 Download Recently Generated (24h)
             </a>
+            <button 
+                onclick="undoLast24Hours()"
+                class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2"
+                title="Remove barcodes created in the last 24 hours"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                </svg>
+                Undo Last 24h
+            </button>
+            <a 
+                href="{{ route('barcodes.downloadSummary') }}" 
+                class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2"
+                title="Download printing instructions and summary"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Download Instructions
+            </a>
             <a 
                 href="{{ route('barcodes.downloadPDF') }}" 
                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2"
+                title="Download barcode stickers PDF"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                Download All PDF
+                Download Barcodes PDF
             </a>
         </div>
     </div>
@@ -205,4 +226,35 @@
         @endif
     </div>
 </div>
+
+<script>
+async function undoLast24Hours() {
+    if (!confirm('Are you sure you want to remove all barcodes created in the last 24 hours? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/barcodes/undo-last-24h', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while undoing barcodes');
+    }
+}
+</script>
 @endsection

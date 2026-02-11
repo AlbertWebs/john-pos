@@ -78,7 +78,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/barcodes/generate-bulk', [\App\Http\Controllers\BarcodeController::class, 'generateBulk'])->name('barcodes.generateBulk');
     Route::post('/barcodes/generate-all', [\App\Http\Controllers\BarcodeController::class, 'generateAll'])->name('barcodes.generateAll');
     Route::match(['get', 'post'], '/barcodes/download-pdf', [\App\Http\Controllers\BarcodeController::class, 'downloadPDF'])->name('barcodes.downloadPDF');
+    Route::match(['get', 'post'], '/barcodes/download-summary', [\App\Http\Controllers\BarcodeController::class, 'downloadSummary'])->name('barcodes.downloadSummary');
     Route::get('/barcodes/recently-generated', [\App\Http\Controllers\BarcodeController::class, 'recentlyGenerated'])->name('barcodes.recentlyGenerated');
+    Route::post('/barcodes/undo-last-24h', [\App\Http\Controllers\BarcodeController::class, 'undoLast24Hours'])->name('barcodes.undoLast24Hours');
     
     // Supporting Tables (AJAX endpoints for dropdowns)
     Route::get('/api/categories', [CategoryController::class, 'index'])->name('api.categories');
