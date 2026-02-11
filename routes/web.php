@@ -72,10 +72,13 @@ Route::middleware('auth')->group(function () {
     
     // Barcode Management
     Route::get('/barcodes', [\App\Http\Controllers\BarcodeController::class, 'index'])->name('barcodes.index');
+    Route::get('/barcodes/products', [\App\Http\Controllers\BarcodeController::class, 'productsWithBarcodes'])->name('barcodes.products');
+    Route::get('/barcodes/image/{barcode}', [\App\Http\Controllers\BarcodeController::class, 'barcodeImage'])->name('barcodes.image');
     Route::post('/barcodes/generate/{inventory}', [\App\Http\Controllers\BarcodeController::class, 'generate'])->name('barcodes.generate');
     Route::post('/barcodes/generate-bulk', [\App\Http\Controllers\BarcodeController::class, 'generateBulk'])->name('barcodes.generateBulk');
     Route::post('/barcodes/generate-all', [\App\Http\Controllers\BarcodeController::class, 'generateAll'])->name('barcodes.generateAll');
-    Route::get('/barcodes/download-pdf', [\App\Http\Controllers\BarcodeController::class, 'downloadPDF'])->name('barcodes.downloadPDF');
+    Route::match(['get', 'post'], '/barcodes/download-pdf', [\App\Http\Controllers\BarcodeController::class, 'downloadPDF'])->name('barcodes.downloadPDF');
+    Route::get('/barcodes/recently-generated', [\App\Http\Controllers\BarcodeController::class, 'recentlyGenerated'])->name('barcodes.recentlyGenerated');
     
     // Supporting Tables (AJAX endpoints for dropdowns)
     Route::get('/api/categories', [CategoryController::class, 'index'])->name('api.categories');

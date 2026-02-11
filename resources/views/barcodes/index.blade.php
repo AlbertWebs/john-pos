@@ -11,9 +11,18 @@
             <p class="text-gray-600 mt-1">Generate barcodes for items and download printable stickers</p>
         </div>
         <div class="flex gap-3">
+            <a 
+                href="{{ route('barcodes.products') }}" 
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                View Products With Barcodes
+            </a>
             <button 
                 @click="generateAllBarcodes()"
-                :disabled="processing || items.length === 0"
+                :disabled="processing || totalItems === 0"
                 class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,6 +31,16 @@
                 <span x-show="!processing">Generate All</span>
                 <span x-show="processing">Processing...</span>
             </button>
+            <a 
+                href="{{ route('barcodes.recentlyGenerated', ['hours' => 24]) }}" 
+                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2"
+                title="Download barcodes generated in the last 24 hours"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Download Recently Generated (24h)
+            </a>
             <a 
                 href="{{ route('barcodes.downloadPDF') }}" 
                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2"
@@ -205,6 +224,42 @@ function barcodeManager() {
     return {
         selectedItems: [],
         processing: false,
+        totalItems: {{ $items->total() }},
+
+        downloadPDF(itemIds) {
+            // Use POST for large datasets to avoid max_input_vars limit
+            if (itemIds.length > 500) {
+                // Create a form and submit via POST
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/barcodes/download-pdf';
+                
+                // Add CSRF token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = '{{ csrf_token() }}';
+                form.appendChild(csrfInput);
+                
+                // Add item IDs as JSON to avoid too many form fields
+                const jsonInput = document.createElement('input');
+                jsonInput.type = 'hidden';
+                jsonInput.name = 'item_ids_json';
+                jsonInput.value = JSON.stringify(itemIds);
+                form.appendChild(jsonInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } else {
+                // Use GET for smaller datasets
+                const params = new URLSearchParams();
+                itemIds.forEach(id => {
+                    params.append('item_ids[]', id);
+                });
+                window.location.href = `/barcodes/download-pdf?${params.toString()}`;
+            }
+        },
 
         selectAll() {
             this.selectedItems = @json($items->pluck('id')->toArray());
@@ -237,8 +292,17 @@ function barcodeManager() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('Barcode generated successfully: ' + data.barcode);
-                    window.location.reload();
+                    if (data.item_ids && data.item_ids.length > 0) {
+                        const download = confirm('Barcode generated successfully: ' + data.barcode + '\n\nWould you like to download the barcode PDF now?');
+                        if (download) {
+                            this.downloadPDF(data.item_ids);
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert('Barcode generated successfully: ' + data.barcode);
+                        window.location.reload();
+                    }
                 } else {
                     alert('Error: ' + data.message);
                 }
@@ -277,8 +341,17 @@ function barcodeManager() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert(data.message);
-                    window.location.reload();
+                    if (data.item_ids && data.item_ids.length > 0) {
+                        const download = confirm(data.message + '\n\nWould you like to download the generated barcodes PDF now?');
+                        if (download) {
+                            this.downloadPDF(data.item_ids);
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert(data.message);
+                        window.location.reload();
+                    }
                 } else {
                     alert('Error: ' + data.message);
                 }
@@ -309,8 +382,17 @@ function barcodeManager() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert(data.message);
-                    window.location.reload();
+                    if (data.item_ids && data.item_ids.length > 0) {
+                        const download = confirm(data.message + '\n\nWould you like to download the generated barcodes PDF now?');
+                        if (download) {
+                            this.downloadPDF(data.item_ids);
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert(data.message);
+                        window.location.reload();
+                    }
                 } else {
                     alert('Error: ' + data.message);
                 }
@@ -328,12 +410,7 @@ function barcodeManager() {
                 return;
             }
 
-            const params = new URLSearchParams();
-            this.selectedItems.forEach(id => {
-                params.append('item_ids[]', id);
-            });
-
-            window.location.href = `/barcodes/download-pdf?${params.toString()}`;
+            this.downloadPDF(this.selectedItems);
         },
     }
 }

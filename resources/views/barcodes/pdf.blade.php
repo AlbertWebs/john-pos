@@ -15,18 +15,24 @@
             font-family: 'Courier New', Courier, monospace;
             font-size: 10px;
             padding: 5mm;
+            margin: 0;
+            line-height: 1;
         }
         
         .sticker {
             width: 63.5mm; /* Standard label size (2.5 inches) */
             height: 38.1mm; /* Standard label size (1.5 inches) */
             border: 1px solid #000;
-            padding: 3mm;
+            padding: 2mm;
             display: inline-block;
             margin: 2mm;
+            margin-bottom: 3mm;
             page-break-inside: avoid;
+            page-break-after: auto;
             vertical-align: top;
             box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
         }
         
         .sticker-content {
@@ -34,28 +40,38 @@
             flex-direction: column;
             height: 100%;
             justify-content: space-between;
+            overflow: hidden;
         }
         
         .sticker-header {
             text-align: center;
             border-bottom: 1px solid #000;
-            padding-bottom: 2mm;
-            margin-bottom: 2mm;
+            padding-bottom: 1.5mm;
+            margin-bottom: 1.5mm;
+            flex-shrink: 0;
+            min-height: 0;
         }
         
         .item-name {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: bold;
-            margin-bottom: 1mm;
-            line-height: 1.2;
+            margin-bottom: 0.5mm;
+            line-height: 1.1;
             word-wrap: break-word;
-            max-height: 8mm;
             overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            max-height: 6mm;
         }
         
         .part-number {
-            font-size: 7px;
+            font-size: 6px;
             color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .barcode-section {
@@ -65,6 +81,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            min-height: 0;
+            overflow: hidden;
         }
         
         .barcode-text {
@@ -80,38 +98,45 @@
         }
         
         .barcode-number {
-            font-size: 9px;
-            margin-top: 1mm;
+            font-size: 8px;
+            margin-top: 0.5mm;
             font-weight: bold;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+            word-break: break-all;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
         
-        /* Barcode visual representation using bars */
+        /* Barcode image */
         .barcode-visual {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 15mm;
-            margin: 2mm 0;
-        }
-        
-        .barcode-bar {
-            display: inline-block;
-            background: #000;
             height: 12mm;
-            margin: 0 0.5mm;
+            margin: 1mm 0;
+            overflow: hidden;
+            flex-shrink: 0;
         }
         
-        .bar-thin { width: 1mm; }
-        .bar-medium { width: 2mm; }
-        .bar-thick { width: 3mm; }
+        .barcode-image {
+            max-width: 100%;
+            max-height: 12mm;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
         
         .sticker-footer {
             text-align: center;
             border-top: 1px solid #000;
-            padding-top: 2mm;
-            margin-top: 2mm;
-            font-size: 7px;
+            padding-top: 1mm;
+            margin-top: 1mm;
+            font-size: 6px;
+            flex-shrink: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .price {
@@ -127,11 +152,14 @@
         @media print {
             body {
                 padding: 0;
+                margin: 0;
             }
             
             .sticker {
-                margin: 0;
+                margin: 2mm;
+                margin-bottom: 3mm;
                 border: 1px solid #000;
+                page-break-inside: avoid;
             }
         }
     </style>
@@ -141,34 +169,19 @@
     <div class="sticker">
         <div class="sticker-content">
             <div class="sticker-header">
-                <div class="item-name">{{ Str::limit($item->name, 30) }}</div>
-                <div class="part-number">{{ $item->part_number }}</div>
+                <div class="item-name">{{ Str::limit($item->name, 25) }}</div>
+                <div class="part-number">{{ Str::limit($item->part_number, 20) }}</div>
             </div>
             
             <div class="barcode-section">
                 <div class="barcode-visual">
-                    @php
-                        // Simple barcode visual representation
-                        $barcode = $item->barcode;
-                        $chars = str_split($barcode);
-                        $barPattern = [];
-                        foreach ($chars as $char) {
-                            $ascii = ord($char);
-                            // Create pattern based on character
-                            if ($ascii % 3 == 0) {
-                                $barPattern[] = 'bar-thin';
-                            } elseif ($ascii % 3 == 1) {
-                                $barPattern[] = 'bar-medium';
-                            } else {
-                                $barPattern[] = 'bar-thick';
-                            }
-                        }
-                    @endphp
-                    @foreach($barPattern as $barClass)
-                        <span class="barcode-bar {{ $barClass }}"></span>
-                    @endforeach
+                    @if(isset($item->barcode_image_base64) && $item->barcode_image_base64)
+                        <img src="{{ $item->barcode_image_base64 }}" alt="Barcode {{ $item->barcode }}" class="barcode-image" />
+                    @else
+                        <div style="font-size: 6px; color: #999;">{{ $item->barcode }}</div>
+                    @endif
                 </div>
-                <div class="barcode-number">{{ $item->barcode }}</div>
+                <div class="barcode-number">{{ Str::limit($item->barcode, 25) }}</div>
             </div>
             
             <div class="sticker-footer">
