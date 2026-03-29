@@ -14,6 +14,16 @@
     @if(session('success'))
     <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">{{ session('success') }}</div>
     @endif
+    @if(session('error'))
+    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">{{ session('error') }}</div>
+    @endif
+    @if(empty($stockAuditTablesReady))
+    <div class="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-lg">
+        <strong>Database setup required.</strong> Run migrations on the server so the stock audit tables exist:
+        <code class="bg-amber-100 px-1 rounded">php artisan migrate</code>
+        (migration file: <code class="bg-amber-100 px-1 rounded">2026_03_29_000001_create_stock_audits_tables</code>)
+    </div>
+    @endif
 
     <div class="bg-white rounded-lg shadow-md p-6">
         <form method="GET" action="{{ route('reports.stock-audit') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
@@ -50,7 +60,7 @@
         </p>
     </div>
 
-    <form method="POST" action="{{ route('reports.stock-audit.save') }}" class="space-y-4">
+    <form method="POST" action="{{ route('reports.stock-audit.save') }}" class="space-y-4" @if(empty($stockAuditTablesReady)) onsubmit="return false" @endif>
         @csrf
         <input type="hidden" name="period_from" value="{{ $startDate->toDateString() }}">
         <input type="hidden" name="period_to" value="{{ $endDate->toDateString() }}">
@@ -136,7 +146,7 @@
             @endif
         </div>
 
-        @if($rows->count() > 0)
+        @if($rows->count() > 0 && !empty($stockAuditTablesReady))
         <div class="flex flex-wrap items-center gap-3">
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition">
                 Save physical counts (this page)
