@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class StockAuditController extends Controller
 {
@@ -78,7 +79,10 @@ class StockAuditController extends Controller
         }
 
         $categories = Category::orderBy('name')->get();
-        $recentAudits = StockAudit::with('user')->orderByDesc('created_at')->limit(10)->get();
+        $stockAuditTablesReady = Schema::hasTable('stock_audits') && Schema::hasTable('stock_audit_lines');
+        $recentAudits = $stockAuditTablesReady
+            ? StockAudit::with('user')->orderByDesc('created_at')->limit(10)->get()
+            : collect();
 
         return view('reports.stock-audit', [
             'rows' => $rows,
@@ -87,11 +91,18 @@ class StockAuditController extends Controller
             'endDate' => $endDate,
             'categories' => $categories,
             'recentAudits' => $recentAudits,
+            'stockAuditTablesReady' => $stockAuditTablesReady,
         ]);
     }
 
     public function storePhysical(Request $request)
     {
+        if (! Schema::hasTable('stock_audits') || ! Schema::hasTable('stock_audit_lines')) {
+            return redirect()
+                ->route('reports.stock-audit')
+                ->with('error', 'Stock audit tables are missing. Run: php artisan migrate');
+        }
+
         $validated = $request->validate([
             'period_from' => 'required|date',
             'period_to' => 'required|date|after_or_equal:period_from',
@@ -183,7 +194,7 @@ class StockAuditController extends Controller
 
     private function latestPhysicalCounts($partIds): array
     {
-        if ($partIds->isEmpty()) {
+        if ($partIds->isEmpty() || ! Schema::hasTable('stock_audit_lines') || ! Schema::hasTable('stock_audits')) {
             return [];
         }
 
