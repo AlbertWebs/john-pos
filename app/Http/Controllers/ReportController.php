@@ -10,6 +10,7 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Exports\SoldVsCostExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -25,6 +26,30 @@ class ReportController extends Controller
      * Cost price vs average sold price per item (optional sale date range for averages).
      */
     public function soldVsCost(Request $request)
+    {
+        $query = $this->soldVsCostBaseQuery($request);
+
+        if ($request->get('export') === 'excel') {
+            $items = $query->get();
+            $filename = 'sold-vs-cost-' . now()->format('Y-m-d-His') . '.xlsx';
+
+            return Excel::download(new SoldVsCostExport($items), $filename);
+        }
+
+        $items = $query->paginate(50)->appends($request->query());
+
+        $categories = \App\Models\Category::orderBy('name')->get();
+
+        return view('reports.sold-vs-cost', [
+            'items' => $items,
+            'categories' => $categories,
+        ]);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<\App\Models\Inventory>
+     */
+    protected function soldVsCostBaseQuery(Request $request)
     {
         $salesAgg = DB::table('sale_items')
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
@@ -59,14 +84,7 @@ class ReportController extends Controller
             });
         }
 
-        $items = $query->paginate(50)->appends($request->query());
-
-        $categories = \App\Models\Category::orderBy('name')->get();
-
-        return view('reports.sold-vs-cost', [
-            'items' => $items,
-            'categories' => $categories,
-        ]);
+        return $query;
     }
 
     public function sales(Request $request)

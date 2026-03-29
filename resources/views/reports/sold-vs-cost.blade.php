@@ -32,9 +32,13 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Name, part #, SKU" class="w-full border border-gray-300 rounded-lg px-3 py-2">
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold">Apply</button>
                 <a href="{{ route('reports.sold-vs-cost') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold">Reset</a>
+                <a href="{{ route('reports.sold-vs-cost', array_merge(request()->query(), ['export' => 'excel'])) }}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold inline-flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Export Excel
+                </a>
             </div>
         </form>
         <p class="text-sm text-gray-500 mt-3">Leave dates empty to use <strong>all-time</strong> sales when calculating average sold price. Margin uses average sold price minus cost (when both exist).</p>
