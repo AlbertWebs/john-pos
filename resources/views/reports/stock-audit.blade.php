@@ -60,7 +60,7 @@
         </p>
     </div>
 
-    <form method="POST" action="{{ route('reports.stock-audit.save') }}" class="space-y-4" @if(empty($stockAuditTablesReady)) onsubmit="return false" @endif>
+    <form method="POST" action="{{ route('reports.stock-audit.save') }}" class="space-y-4">
         @csrf
         <input type="hidden" name="period_from" value="{{ $startDate->toDateString() }}">
         <input type="hidden" name="period_to" value="{{ $endDate->toDateString() }}">
