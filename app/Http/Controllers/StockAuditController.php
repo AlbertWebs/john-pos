@@ -11,33 +11,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StockAuditController extends Controller
 {
     public function index(Request $request)
     {
-        $startDate = $request->filled('start_date')
-            ? Carbon::parse($request->start_date)->startOfDay()
-            : now()->startOfMonth()->startOfDay();
-        $endDate = $request->filled('end_date')
-            ? Carbon::parse($request->end_date)->endOfDay()
-            : now()->endOfDay();
+        $startDate = $this->resolveStartDate($request);
+        $endDate = $this->resolveEndDate($request);
 
-        $query = Inventory::query()
-            ->with('category')
-            ->orderBy('name');
+        if ($request->filled('export') && $request->export === 'excel') {
+            return $this->exportExcel($request, $startDate, $endDate);
+        }
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('name', 'like', "%{$s}%")
-                    ->orWhere('part_number', 'like', "%{$s}%")
-                    ->orWhere('sku', 'like', "%{$s}%");
-            });
-        }
+        $query = $this->stockAuditBaseQuery($request);
 
         $paginator = $query->paginate(50)->appends($request->query());
         $partIds = $paginator->getCollection()->pluck('id');
@@ -50,28 +37,7 @@ class StockAuditController extends Controller
             $physicalMap = $this->latestPhysicalCounts($partIds);
 
             $paginator->getCollection()->transform(function (Inventory $item) use ($aggregates, $physicalMap) {
-                $id = $item->id;
-                $closing = (int) $item->stock_quantity;
-                $net = (int) ($aggregates['net_movement'][$id] ?? 0);
-                $opening = $closing - $net;
-                $sold = (int) ($aggregates['sold'][$id] ?? 0);
-                $purchases = (int) ($aggregates['purchases'][$id] ?? 0);
-                $returns = (int) ($aggregates['returns'][$id] ?? 0);
-                $other = (int) ($aggregates['other'][$id] ?? 0);
-                $physical = $physicalMap[$id] ?? null;
-                $variance = $physical !== null ? $physical - $closing : null;
-
-                return (object) [
-                    'part' => $item,
-                    'opening_stock' => $opening,
-                    'purchases' => $purchases,
-                    'items_sold' => $sold,
-                    'returns' => $returns,
-                    'other_movements' => $other,
-                    'closing_stock' => $closing,
-                    'physical_stock' => $physical,
-                    'variance' => $variance,
-                ];
+                return $this->mapItemToAuditRow($item, $aggregates, $physicalMap);
             });
 
             $totals = $this->computeTotalsForPage($paginator);
@@ -138,6 +104,121 @@ class StockAuditController extends Controller
                 'end_date' => $validated['period_to'],
             ])
             ->with('success', 'Physical stock counts saved.');
+    }
+
+    private function resolveStartDate(Request $request): Carbon
+    {
+        return $request->filled('start_date')
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : now()->startOfMonth()->startOfDay();
+    }
+
+    private function resolveEndDate(Request $request): Carbon
+    {
+        return $request->filled('end_date')
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : now()->endOfDay();
+    }
+
+    private function stockAuditBaseQuery(Request $request)
+    {
+        $query = Inventory::query()
+            ->with('category')
+            ->orderBy('name');
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                    ->orWhere('part_number', 'like', "%{$s}%")
+                    ->orWhere('sku', 'like', "%{$s}%");
+            });
+        }
+
+        return $query;
+    }
+
+    private function mapItemToAuditRow(Inventory $item, array $aggregates, array $physicalMap): object
+    {
+        $id = $item->id;
+        $closing = (int) $item->stock_quantity;
+        $net = (int) ($aggregates['net_movement'][$id] ?? 0);
+        $opening = $closing - $net;
+        $sold = (int) ($aggregates['sold'][$id] ?? 0);
+        $purchases = (int) ($aggregates['purchases'][$id] ?? 0);
+        $returns = (int) ($aggregates['returns'][$id] ?? 0);
+        $other = (int) ($aggregates['other'][$id] ?? 0);
+        $physical = $physicalMap[$id] ?? null;
+        $variance = $physical !== null ? $physical - $closing : null;
+
+        return (object) [
+            'part' => $item,
+            'opening_stock' => $opening,
+            'purchases' => $purchases,
+            'items_sold' => $sold,
+            'returns' => $returns,
+            'other_movements' => $other,
+            'closing_stock' => $closing,
+            'physical_stock' => $physical,
+            'variance' => $variance,
+        ];
+    }
+
+    private function exportExcel(Request $request, Carbon $startDate, Carbon $endDate)
+    {
+        $items = $this->stockAuditBaseQuery($request)->get();
+        $partIds = $items->pluck('id');
+
+        if ($partIds->isEmpty()) {
+            return redirect()
+                ->route('reports.stock-audit', $request->query())
+                ->with('error', 'No items to export. Adjust filters.');
+        }
+
+        $aggregates = $this->buildAggregates($partIds, $startDate, $endDate);
+        $physicalMap = $this->latestPhysicalCounts($partIds);
+
+        $rows = $items->map(fn (Inventory $item) => $this->mapItemToAuditRow($item, $aggregates, $physicalMap));
+        $totals = $this->computeTotalsForCollection($rows);
+
+        $filename = 'stock-audit-' . $startDate->toDateString() . '-to-' . $endDate->toDateString() . '.xlsx';
+
+        return Excel::download(
+            new \App\Exports\StockAuditExport($rows, $startDate, $endDate, $totals),
+            $filename
+        );
+    }
+
+    private function computeTotalsForCollection(\Illuminate\Support\Collection $rows): object
+    {
+        $t = $this->emptyTotals();
+        $physicalSum = 0;
+        $physicalCount = 0;
+        $varianceSum = 0;
+        $varianceCount = 0;
+
+        foreach ($rows as $row) {
+            $t->opening_stock += $row->opening_stock;
+            $t->purchases += $row->purchases;
+            $t->items_sold += $row->items_sold;
+            $t->returns += $row->returns;
+            $t->other_movements += $row->other_movements;
+            $t->closing_stock += $row->closing_stock;
+            if ($row->physical_stock !== null) {
+                $physicalSum += $row->physical_stock;
+                $physicalCount++;
+                $varianceSum += $row->variance;
+                $varianceCount++;
+            }
+        }
+
+        $t->physical_stock = $physicalCount > 0 ? $physicalSum : null;
+        $t->variance = $varianceCount > 0 ? $varianceSum : null;
+
+        return $t;
     }
 
     private function buildAggregates($partIds, Carbon $startDate, Carbon $endDate): array
