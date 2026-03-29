@@ -21,6 +21,54 @@ class ReportController extends Controller
         return view('reports.index');
     }
 
+    /**
+     * Cost price vs average sold price per item (optional sale date range for averages).
+     */
+    public function soldVsCost(Request $request)
+    {
+        $salesAgg = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->when($request->filled('start_date'), function ($q) use ($request) {
+                $q->whereDate('sales.date', '>=', $request->start_date);
+            })
+            ->when($request->filled('end_date'), function ($q) use ($request) {
+                $q->whereDate('sales.date', '<=', $request->end_date);
+            })
+            ->select(
+                'sale_items.part_id',
+                DB::raw('SUM(sale_items.quantity) as qty_sold'),
+                DB::raw('SUM(sale_items.subtotal) / NULLIF(SUM(sale_items.quantity), 0) as avg_sold_price')
+            )
+            ->groupBy('sale_items.part_id');
+
+        $query = Inventory::query()
+            ->with('category')
+            ->leftJoinSub($salesAgg, 'agg', 'agg.part_id', '=', 'inventory.id')
+            ->select('inventory.*', 'agg.qty_sold', 'agg.avg_sold_price')
+            ->orderBy('inventory.name');
+
+        if ($request->filled('category_id')) {
+            $query->where('inventory.category_id', $request->category_id);
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('inventory.name', 'like', "%{$s}%")
+                    ->orWhere('inventory.part_number', 'like', "%{$s}%")
+                    ->orWhere('inventory.sku', 'like', "%{$s}%");
+            });
+        }
+
+        $items = $query->paginate(50)->appends($request->query());
+
+        $categories = \App\Models\Category::orderBy('name')->get();
+
+        return view('reports.sold-vs-cost', [
+            'items' => $items,
+            'categories' => $categories,
+        ]);
+    }
+
     public function sales(Request $request)
     {
         $query = Sale::with(['customer', 'user', 'saleItems.part', 'payments']);

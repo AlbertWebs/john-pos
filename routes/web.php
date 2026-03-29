@@ -127,6 +127,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/sales', [\App\Http\Controllers\ReportController::class, 'sales'])->name('reports.sales');
     Route::get('/reports/inventory', [\App\Http\Controllers\ReportController::class, 'inventory'])->name('reports.inventory');
     Route::get('/reports/top-selling', [\App\Http\Controllers\ReportController::class, 'topSelling'])->name('reports.top-selling');
+    Route::get('/reports/sold-vs-cost', [\App\Http\Controllers\ReportController::class, 'soldVsCost'])->name('reports.sold-vs-cost');
     Route::get('/reports/stock-audit', [\App\Http\Controllers\StockAuditController::class, 'index'])->name('reports.stock-audit');
     Route::post('/reports/stock-audit/save', [\App\Http\Controllers\StockAuditController::class, 'storePhysical'])->name('reports.stock-audit.save');
     Route::get('/most-selling-items', [\App\Http\Controllers\ReportController::class, 'mostSelling'])->name('most-selling.index');
