@@ -98,6 +98,63 @@ class Inventory extends Model
         return $query->whereColumn('stock_quantity', '<=', 'reorder_level');
     }
 
+    /**
+     * Product types exempt from barcode printing (product name only, whole-word match).
+     */
+    public static function noPrintBarcodeTerms(): array
+    {
+        return [
+            'rivet',
+            'washer',
+            'tie wrap',
+            'metric bolt',
+            'bolt',
+            'nut',
+            'return spring',
+            'horse clip',
+            'wire clip',
+        ];
+    }
+
+    /**
+     * Exclude items from barcode printing when product name contains an exempt term as a whole word (category not checked).
+     */
+    public function scopeExcludeNoPrintBarcodeCategories($query)
+    {
+        $terms = self::noPrintBarcodeTerms();
+        $table = $this->getTable();
+
+        foreach ($terms as $term) {
+            $query->whereRaw('LOWER(' . $table . '.name) != ?', [$term])
+                ->whereRaw('LOWER(' . $table . '.name) != ?', [$term . 's'])
+                ->whereRaw('LOWER(' . $table . '.name) NOT LIKE ?', ['% ' . $term . ' %'])
+                ->whereRaw('LOWER(' . $table . '.name) NOT LIKE ?', [$term . ' %'])
+                ->whereRaw('LOWER(' . $table . '.name) NOT LIKE ?', ['% ' . $term])
+                ->whereRaw('LOWER(' . $table . '.name) NOT LIKE ?', ['% ' . $term . 's %'])
+                ->whereRaw('LOWER(' . $table . '.name) NOT LIKE ?', [$term . 's %'])
+                ->whereRaw('LOWER(' . $table . '.name) NOT LIKE ?', ['% ' . $term . 's']);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Whether this item should be excluded from barcode generation/printing (product name only, whole-word match).
+     */
+    public function shouldExcludeFromBarcodePrint(): bool
+    {
+        $name = strtolower((string) $this->name);
+
+        foreach (self::noPrintBarcodeTerms() as $term) {
+            $pattern = '/\b' . preg_quote($term, '/') . 's?\b/';
+            if (preg_match($pattern, $name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // Helper methods
     public function isLowStock()
     {

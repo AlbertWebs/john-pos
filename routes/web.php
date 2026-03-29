@@ -79,6 +79,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/barcodes/generate-all', [\App\Http\Controllers\BarcodeController::class, 'generateAll'])->name('barcodes.generateAll');
     Route::match(['get', 'post'], '/barcodes/download-pdf', [\App\Http\Controllers\BarcodeController::class, 'downloadPDF'])->name('barcodes.downloadPDF');
     Route::match(['get', 'post'], '/barcodes/download-summary', [\App\Http\Controllers\BarcodeController::class, 'downloadSummary'])->name('barcodes.downloadSummary');
+    Route::get('/barcodes/sheets/preview', [\App\Http\Controllers\BarcodeController::class, 'previewBarcodeSheets'])->name('barcodes.sheetsPreview');
+    Route::match(['get', 'post'], '/barcodes/download-sheets', [\App\Http\Controllers\BarcodeController::class, 'downloadBarcodeSheets'])->name('barcodes.downloadSheets');
     Route::get('/barcodes/recently-generated', [\App\Http\Controllers\BarcodeController::class, 'recentlyGenerated'])->name('barcodes.recentlyGenerated');
     Route::post('/barcodes/undo-last-24h', [\App\Http\Controllers\BarcodeController::class, 'undoLast24Hours'])->name('barcodes.undoLast24Hours');
     
@@ -125,6 +127,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/sales', [\App\Http\Controllers\ReportController::class, 'sales'])->name('reports.sales');
     Route::get('/reports/inventory', [\App\Http\Controllers\ReportController::class, 'inventory'])->name('reports.inventory');
     Route::get('/reports/top-selling', [\App\Http\Controllers\ReportController::class, 'topSelling'])->name('reports.top-selling');
+    Route::get('/reports/stock-audit', [\App\Http\Controllers\StockAuditController::class, 'index'])->name('reports.stock-audit');
+    Route::post('/reports/stock-audit/save', [\App\Http\Controllers\StockAuditController::class, 'storePhysical'])->name('reports.stock-audit.save');
     Route::get('/most-selling-items', [\App\Http\Controllers\ReportController::class, 'mostSelling'])->name('most-selling.index');
     
     // Returns

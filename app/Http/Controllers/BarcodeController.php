@@ -21,6 +21,7 @@ class BarcodeController extends Controller
                 $q->whereNull('barcode')
                   ->orWhere('barcode', '');
             })
+            ->excludeNoPrintBarcodeCategories()
             ->orderBy('name');
 
         // Search
@@ -58,6 +59,14 @@ class BarcodeController extends Controller
             ], 400);
         }
 
+        $inventory->load('category');
+        if ($inventory->shouldExcludeFromBarcodePrint()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Barcodes are not generated for this product type (e.g. rivets, washers, bolts).',
+            ], 400);
+        }
+
         // Generate barcode based on part number or ID
         $barcode = $this->generateBarcode($inventory);
 
@@ -86,9 +95,13 @@ class BarcodeController extends Controller
         $generatedIds = [];
 
         foreach ($request->item_ids as $itemId) {
-            $item = Inventory::find($itemId);
+            $item = Inventory::with('category')->find($itemId);
             
             if ($item && !$item->barcode) {
+                if ($item->shouldExcludeFromBarcodePrint()) {
+                    $skipped++;
+                    continue;
+                }
                 $barcode = $this->generateBarcode($item);
                 $item->update(['barcode' => $barcode]);
                 $generated++;
@@ -112,8 +125,11 @@ class BarcodeController extends Controller
      */
     public function generateAll(Request $request)
     {
-        $items = Inventory::whereNull('barcode')
-            ->orWhere('barcode', '')
+        $items = Inventory::with('category')
+            ->where(function ($q) {
+                $q->whereNull('barcode')->orWhere('barcode', '');
+            })
+            ->excludeNoPrintBarcodeCategories()
             ->get();
 
         $generated = 0;
@@ -153,7 +169,7 @@ class BarcodeController extends Controller
                 $itemIds = $request->input('item_ids', []);
             }
         } else {
-            $itemIds = $request->input('item_ids', []);
+        $itemIds = $request->input('item_ids', []);
         }
         
         // Ensure item_ids is an array
@@ -165,6 +181,7 @@ class BarcodeController extends Controller
             // Get all items with barcodes if none specified
             $items = Inventory::whereNotNull('barcode')
                 ->where('barcode', '!=', '')
+                ->excludeNoPrintBarcodeCategories()
                 ->with(['category', 'brand'])
                 ->orderBy('name')
                 ->get();
@@ -172,6 +189,7 @@ class BarcodeController extends Controller
             $items = Inventory::whereIn('id', $itemIds)
                 ->whereNotNull('barcode')
                 ->where('barcode', '!=', '')
+                ->excludeNoPrintBarcodeCategories()
                 ->with(['category', 'brand'])
                 ->orderBy('name')
                 ->get();
@@ -277,6 +295,7 @@ class BarcodeController extends Controller
             $limit = $request->input('limit', 500); // Default limit of 500 items
             $items = Inventory::whereNotNull('barcode')
                 ->where('barcode', '!=', '')
+                ->excludeNoPrintBarcodeCategories()
                 ->select('id', 'name', 'part_number', 'barcode', 'stock_quantity', 'category_id') // Select only needed columns
                 ->with(['category:id,name']) // Only load category id and name
                 ->orderBy('stock_quantity', 'desc')
@@ -290,6 +309,7 @@ class BarcodeController extends Controller
             $items = Inventory::whereIn('id', $limitedItemIds)
                 ->whereNotNull('barcode')
                 ->where('barcode', '!=', '')
+                ->excludeNoPrintBarcodeCategories()
                 ->select('id', 'name', 'part_number', 'barcode', 'stock_quantity', 'category_id') // Select only needed columns
                 ->with(['category:id,name']) // Only load category id and name
                 ->orderBy('stock_quantity', 'desc')
@@ -348,6 +368,194 @@ class BarcodeController extends Controller
         }
     }
 
+    /** Labels per A4 page (4 columns x 7 rows) */
+    private const SHEETS_LABELS_PER_PAGE = 28;
+
+    /** Max labels per PDF to keep file size and memory manageable */
+    private const SHEETS_LABELS_PER_PDF = 84;
+
+    /**
+     * Build items with barcode images and expanded flat list of labels (one per quantity).
+     *
+     * @return array{items: \Illuminate\Support\Collection, labels: array}
+     */
+    private function getLabelsForSheets(Request $request): array
+    {
+        $limit = (int) $request->input('limit', 2000);
+        $hours = $request->input('hours');
+
+        if ($request->isMethod('post') && $request->has('item_ids_json')) {
+            $itemIds = json_decode($request->input('item_ids_json'), true) ?? [];
+        } else {
+            $itemIds = $request->input('item_ids', []);
+        }
+        if (!is_array($itemIds)) {
+            $itemIds = [];
+        }
+
+        $itemsWithBarcodeCount = null;
+
+        if (!empty($itemIds)) {
+            $itemIds = array_slice($itemIds, 0, $limit);
+            $query = Inventory::whereIn('id', $itemIds)
+                ->whereNotNull('barcode')
+                ->where('barcode', '!=', '')
+                ->excludeNoPrintBarcodeCategories()
+                ->select('id', 'name', 'part_number', 'barcode', 'stock_quantity')
+                ->orderBy('stock_quantity', 'desc')
+                ->orderBy('name', 'asc');
+        } else {
+            $itemsWithBarcodeCount = Inventory::whereNotNull('barcode')
+                ->where('barcode', '!=', '')
+                ->when($hours !== null && $hours !== '', fn ($q) => $q->where('updated_at', '>=', now()->subHours((int) $hours)))
+                ->count();
+
+            $query = Inventory::whereNotNull('barcode')
+                ->where('barcode', '!=', '')
+                ->excludeNoPrintBarcodeCategories()
+                ->select('id', 'name', 'part_number', 'barcode', 'stock_quantity')
+                ->orderBy('stock_quantity', 'desc')
+                ->orderBy('name', 'asc')
+                ->limit($limit);
+
+            if ($hours !== null && $hours !== '') {
+                $query->where('updated_at', '>=', now()->subHours((int) $hours));
+            }
+        }
+
+        $items = $query->get();
+        $generator = new BarcodeGeneratorPNG();
+        $labels = [];
+
+        foreach ($items as $item) {
+            try {
+                $barcodeImage = $generator->getBarcode($item->barcode, $generator::TYPE_CODE_128, 1.5, 30);
+                $barcodeBase64 = 'data:image/png;base64,' . base64_encode($barcodeImage);
+            } catch (\Exception $e) {
+                \Log::warning('Barcode image failed for item ' . $item->id . ': ' . $e->getMessage());
+                $barcodeBase64 = null;
+            }
+            $qty = max(1, (int) $item->stock_quantity);
+            $name = $item->name ?? $item->part_number ?? '—';
+            for ($i = 0; $i < $qty; $i++) {
+                $labels[] = [
+                    'barcode' => $item->barcode,
+                    'name' => $name,
+                    'part_number' => $item->part_number,
+                    'barcode_image_base64' => $barcodeBase64,
+                ];
+            }
+        }
+
+        return [
+            'items' => $items,
+            'labels' => $labels,
+            'items_with_barcode_count' => $itemsWithBarcodeCount,
+        ];
+    }
+
+    /**
+     * Preview barcode sheets: show total labels, pages, and number of PDFs before download.
+     * Always shows the preview page (even when there are 0 labels) so the user can see the state.
+     */
+    public function previewBarcodeSheets(Request $request)
+    {
+        $result = $this->getLabelsForSheets($request);
+        $labels = $result['labels'];
+        $items = $result['items'];
+        $itemsWithBarcodeCount = $result['items_with_barcode_count'] ?? null;
+
+        $totalLabels = count($labels);
+        $labelsPerPage = self::SHEETS_LABELS_PER_PAGE;
+        $labelsPerPdf = self::SHEETS_LABELS_PER_PDF;
+        $totalPages = $totalLabels > 0 ? (int) ceil($totalLabels / $labelsPerPage) : 0;
+        $totalPdfs = $totalLabels > 0 ? (int) ceil($totalLabels / $labelsPerPdf) : 0;
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            if (empty($labels)) {
+                return response()->json(['success' => false, 'message' => 'No barcode labels to print'], 404);
+            }
+        }
+
+        return view('barcodes.sheets-preview', [
+            'items' => $items,
+            'totalLabels' => $totalLabels,
+            'totalPages' => $totalPages,
+            'totalPdfs' => $totalPdfs,
+            'labelsPerPage' => $labelsPerPage,
+            'labelsPerPdf' => $labelsPerPdf,
+            'hours' => $request->input('hours'),
+            'item_ids' => $request->input('item_ids', []),
+            'itemsWithBarcodeCount' => $itemsWithBarcodeCount,
+            'noPrintTerms' => Inventory::noPrintBarcodeTerms(),
+        ]);
+    }
+
+    /**
+     * Download barcode sheets as a zip of multiple A4 PDFs (chunked to avoid huge files).
+     */
+    public function downloadBarcodeSheets(Request $request)
+    {
+        ini_set('memory_limit', '1024M');
+        ini_set('max_execution_time', 300);
+
+        $result = $this->getLabelsForSheets($request);
+        $labels = $result['labels'];
+
+        if (empty($labels)) {
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'No barcode labels to print'], 404);
+            }
+            return redirect()->route('barcodes.index')->with('error', 'No barcode labels to print.');
+        }
+
+        $chunkSize = self::SHEETS_LABELS_PER_PDF;
+        $chunks = array_chunk($labels, $chunkSize);
+        $zipFilename = 'barcode-sheets-' . now()->format('Y-m-d-His') . '.zip';
+
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('isRemoteEnabled', false);
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isPhpEnabled', false);
+        $options->set('dpi', 96);
+
+        $zip = new \ZipArchive();
+        $tempZip = tempnam(sys_get_temp_dir(), 'barcode_sheets_');
+        if ($zip->open($tempZip, \ZipArchive::OVERWRITE | \ZipArchive::CREATE) !== true) {
+            \Log::error('Barcode sheets: could not create zip file');
+            return redirect()->route('barcodes.index')->with('error', 'Could not create zip file.');
+        }
+
+        try {
+            foreach ($chunks as $index => $chunk) {
+                $html = view('barcodes.sheets', ['labels' => $chunk])->render();
+                $dompdf = new Dompdf($options);
+                $dompdf->loadHtml($html);
+                $dompdf->setPaper('A4', 'portrait');
+                $dompdf->render();
+                $pdfContent = $dompdf->output();
+                $zip->addFromString('barcode-sheets-part-' . ($index + 1) . '.pdf', $pdfContent);
+                unset($dompdf, $html, $pdfContent);
+                gc_collect_cycles();
+            }
+            $zip->close();
+        } catch (\Exception $e) {
+            if (is_file($tempZip)) {
+                @unlink($tempZip);
+            }
+            \Log::error('Barcode sheets PDF error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return redirect()->route('barcodes.index')->with('error', 'Error generating PDFs: ' . $e->getMessage());
+        }
+
+        return response()->streamDownload(function () use ($tempZip) {
+            echo file_get_contents($tempZip);
+            @unlink($tempZip);
+        }, $zipFilename, [
+            'Content-Type' => 'application/zip',
+        ]);
+    }
+
     /**
      * Display products with barcodes
      */
@@ -355,7 +563,8 @@ class BarcodeController extends Controller
     {
         $query = Inventory::with(['category', 'brand'])
             ->whereNotNull('barcode')
-            ->where('barcode', '!=', '');
+            ->where('barcode', '!=', '')
+            ->excludeNoPrintBarcodeCategories();
 
         // Filter by recently generated (last 24 hours, 7 days, 30 days, or all)
         if ($request->filled('recent')) {
@@ -417,6 +626,7 @@ class BarcodeController extends Controller
         $query = Inventory::with(['category', 'brand'])
             ->whereNotNull('barcode')
             ->where('barcode', '!=', '')
+            ->excludeNoPrintBarcodeCategories()
             ->where('updated_at', '>=', now()->subHours($hours))
             ->orderBy('updated_at', 'desc');
         

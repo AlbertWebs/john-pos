@@ -48,6 +48,24 @@
             </div>
         </a>
 
+        <!-- Stock Audit Card -->
+        <a href="{{ route('reports.stock-audit') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 hover:border-indigo-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-indigo-100 p-4 rounded-lg">
+                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Stock Audit</h3>
+                    <p class="text-sm text-gray-500 mt-1">Opening, purchases, sold, closing, physical & variance</p>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+
         <!-- Top Selling Report Card -->
         <a href="{{ route('reports.top-selling') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 hover:border-yellow-500">
             <div class="flex items-center gap-4">
