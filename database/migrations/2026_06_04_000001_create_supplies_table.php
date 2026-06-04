@@ -12,7 +12,7 @@ return new class extends Migration
         if (! Schema::hasTable('supplies')) {
             Schema::create('supplies', function (Blueprint $table) {
                 $table->id();
-                // 191 chars max for utf8mb4 index compatibility (MySQL 1000-byte limit)
+                // 191 chars max for utf8mb4 unique index (MySQL 1000-byte key limit)
                 $table->string('name', 191);
                 $table->string('contact_person')->nullable();
                 $table->string('phone', 50)->nullable();
@@ -29,11 +29,16 @@ return new class extends Migration
             return;
         }
 
-        $this->ensureSuppliesIndexes();
+        $this->ensureSuppliesTableReady();
     }
 
-    protected function ensureSuppliesIndexes(): void
+    /**
+     * Table may exist from a failed first run (name as varchar(255), no indexes).
+     */
+    protected function ensureSuppliesTableReady(): void
     {
+        $this->shrinkNameColumnForIndex();
+
         $indexes = collect(DB::select('SHOW INDEX FROM supplies'))->pluck('Key_name')->unique();
 
         if (! $indexes->contains('supplies_name_unique')) {
@@ -46,6 +51,19 @@ return new class extends Migration
             Schema::table('supplies', function (Blueprint $table) {
                 $table->index('status');
             });
+        }
+    }
+
+    protected function shrinkNameColumnForIndex(): void
+    {
+        $column = DB::selectOne("SHOW COLUMNS FROM `supplies` WHERE Field = 'name'");
+
+        if (! $column || ! preg_match('/varchar\((\d+)\)/i', $column->Type ?? '', $matches)) {
+            return;
+        }
+
+        if ((int) $matches[1] > 191) {
+            DB::statement('ALTER TABLE `supplies` MODIFY `name` VARCHAR(191) NOT NULL');
         }
     }
 
