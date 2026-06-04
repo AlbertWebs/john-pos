@@ -160,7 +160,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
-                Delete Selected
+                Remove selected items
             </button>
         </div>
     </div>
@@ -184,7 +184,10 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[12rem]">
+                            <span class="block">Manage item</span>
+                            <span class="block text-[10px] font-normal normal-case text-gray-400 mt-0.5">Add stock, view, edit, or remove</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200" x-data="{ selectedItems: [] }">
@@ -244,31 +247,59 @@
                                 {{ ucfirst($item->status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div class="flex justify-end gap-2">
-                                <a href="{{ route('inventory.add-stock', $item) }}" class="text-green-600 hover:text-green-900" title="Add Stock">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <td class="px-4 py-4 align-top">
+                            <div class="flex flex-col gap-2 w-full max-w-[14rem]">
+                                <a
+                                    href="{{ route('inventory.add-stock', $item) }}"
+                                    class="inline-flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1"
+                                    aria-label="Add stock for {{ $item->name }}"
+                                >
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                     </svg>
+                                    Add stock
                                 </a>
-                                <a href="{{ route('inventory.show', $item) }}" class="text-blue-600 hover:text-blue-900" title="View">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                </a>
-                                <a href="{{ route('inventory.edit', $item) }}" class="text-indigo-600 hover:text-indigo-900" title="Edit">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
-                                </a>
-                                <form action="{{ route('inventory.destroy', $item) }}" method="POST" class="inline-flex delete-inventory-form" data-item-name="{{ $item->name }}" data-item-part="{{ $item->part_number }}">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <a
+                                        href="{{ route('inventory.show', $item) }}"
+                                        class="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        aria-label="View details for {{ $item->name }}"
+                                    >
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        View
+                                    </a>
+                                    <a
+                                        href="{{ route('inventory.edit', $item) }}"
+                                        class="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                        aria-label="Edit {{ $item->name }}"
+                                    >
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Edit
+                                    </a>
+                                </div>
+                                <form
+                                    action="{{ route('inventory.destroy', $item) }}"
+                                    method="POST"
+                                    class="delete-inventory-form"
+                                    data-item-name="{{ $item->name }}"
+                                    data-item-part="{{ $item->part_number }}"
+                                >
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-700 bg-white border-2 border-red-200 hover:bg-red-50 transition focus:outline-none focus:ring-2 focus:ring-red-400"
+                                        aria-label="Remove {{ $item->name }} from inventory"
+                                    >
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                         </svg>
+                                        Remove item
                                     </button>
                                 </form>
                             </div>
@@ -320,8 +351,8 @@
 
                     const itemName = form.dataset.itemName || 'this inventory item';
                     const partNumber = form.dataset.itemPart ? ` (Part #${form.dataset.itemPart})` : '';
-                    const title = 'Delete inventory item?';
-                    const text = `You are about to delete ${itemName}${partNumber}. This action cannot be undone.`;
+                    const title = 'Remove this product?';
+                    const text = `This will permanently remove "${itemName}"${partNumber} from your inventory list. It cannot be undone.`;
 
                     if (typeof Swal === 'undefined') {
                         if (confirm(`${title}\n\n${text}`)) {
@@ -337,8 +368,8 @@
                         showCancelButton: true,
                         confirmButtonColor: '#dc2626',
                         cancelButtonColor: '#6b7280',
-                        confirmButtonText: 'Yes, delete',
-                        cancelButtonText: 'Cancel',
+                        confirmButtonText: 'Yes, remove it',
+                        cancelButtonText: 'No, keep it',
                         reverseButtons: true,
                         focusCancel: true,
                     });
