@@ -8,9 +8,11 @@ use Illuminate\Http\Request;
 
 class PosController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return view('pos.index');
+        return view('pos.index', [
+            'creditMode' => $request->boolean('credit'),
+        ]);
     }
 
     public function search(Request $request)

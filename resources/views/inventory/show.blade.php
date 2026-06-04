@@ -70,6 +70,14 @@
                         <dd class="mt-1 text-sm text-gray-900">{{ $inventory->brand->brand_name }}</dd>
                     </div>
                     @endif
+                    @if($inventory->supply)
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Default supply</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            <a href="{{ route('supplies.show', $inventory->supply) }}" class="text-blue-600 hover:text-blue-800">{{ $inventory->supply->name }}</a>
+                        </dd>
+                    </div>
+                    @endif
                     @if($inventory->vehicleMake)
                     <div>
                         <dt class="text-sm font-medium text-gray-500">Vehicle Make</dt>
@@ -184,6 +192,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supply</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Added by</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
                             </tr>
@@ -193,6 +202,7 @@
                             <tr>
                                 <td class="px-4 py-3 text-sm text-gray-900">{{ $receipt->timestamp->format('M d, Y') }}</td>
                                 <td class="px-4 py-3 text-sm text-right font-semibold text-green-700">+{{ $receipt->change_quantity }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-900">{{ $receipt->supply?->name ?? '—' }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-900">{{ $receipt->user?->name ?? '—' }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-500">{{ $receipt->notes ?: '—' }}</td>
                             </tr>
@@ -216,6 +226,11 @@
                     <a href="{{ route('inventory.edit', $inventory) }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
                         Edit Item
                     </a>
+                    @can('view reports')
+                    <a href="{{ route('reports.product-history', ['part_id' => $inventory->id]) }}" class="block w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
+                        Buy & sell history
+                    </a>
+                    @endcan
                     @if($inventory->saleItems->count() == 0)
                     <form method="POST" action="{{ route('inventory.destroy', $inventory) }}" onsubmit="return confirm('Are you sure you want to delete this item?');">
                         @csrf

@@ -64,7 +64,7 @@
 
                 <!-- Management Section -->
                 @can('manage inventory')
-                <div x-data="{ open: {{ request()->routeIs(['categories.*', 'brands.*', 'vehicle-makes.*', 'vehicle-models.*', 'customers.*', 'barcodes.*']) ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs(['categories.*', 'brands.*', 'supplies.*', 'vehicle-makes.*', 'vehicle-models.*', 'customers.*', 'barcodes.*']) ? 'true' : 'false' }} }">
                     <button 
                         @click="open = !open"
                         class="flex items-center justify-between w-full text-blue-100 hover:bg-white/10 px-4 py-3 rounded-xl mb-2 transition-all group"
@@ -117,6 +117,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                             </svg>
                             <span x-show="!sidebarCollapsed">Brands</span>
+                        </a>
+                        <a href="{{ route('supplies.index') }}" 
+                           class="flex items-center {{ request()->routeIs('supplies.*') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                           title="Supplies"
+                        >
+                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                            <span x-show="!sidebarCollapsed">Supplies</span>
                         </a>
                         <a href="{{ route('vehicle-makes.index') }}" 
                            class="flex items-center {{ request()->routeIs('vehicle-makes.*') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
@@ -174,6 +183,15 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                         </svg>
                         <span x-show="!sidebarCollapsed" class="font-medium">POS</span>
+                    </a>
+                    <a href="{{ route('debtors.index') }}" 
+                       class="flex items-center {{ request()->routeIs('debtors.*') ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:bg-white/10' }} px-4 py-3 rounded-xl mb-2 transition-all group"
+                       title="Debtors"
+                    >
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed" class="font-medium">Debtors</span>
                     </a>
                     
                     @can('view sales')
@@ -374,6 +392,15 @@
                                 </svg>
                                 <span x-show="!sidebarCollapsed">Sales Report</span>
                             </a>
+                            <a href="{{ route('reports.stock-value') }}" 
+                               class="flex items-center {{ request()->routeIs('reports.stock-value') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                               title="Stock Value"
+                            >
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">Stock Value</span>
+                            </a>
                             <a href="{{ route('reports.inventory') }}" 
                                class="flex items-center {{ request()->routeIs('reports.inventory') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
                                title="Inventory Report"
@@ -418,6 +445,33 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 <span x-show="!sidebarCollapsed">Sold vs cost</span>
+                            </a>
+                            <a href="{{ route('reports.accounts-receivable') }}" 
+                               class="flex items-center {{ request()->routeIs('reports.accounts-receivable') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                               title="Accounts Receivable"
+                            >
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">Accounts Receivable</span>
+                            </a>
+                            <a href="{{ route('reports.double-entry') }}" 
+                               class="flex items-center {{ request()->routeIs('reports.double-entry') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                               title="Double Entry"
+                            >
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">Double Entry</span>
+                            </a>
+                            <a href="{{ route('reports.product-history') }}" 
+                               class="flex items-center {{ request()->routeIs('reports.product-history') ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10' }} px-3 py-2 rounded-lg text-sm transition"
+                               title="Product buy & sell history"
+                            >
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">Product history</span>
                             </a>
                         </div>
                     </div>

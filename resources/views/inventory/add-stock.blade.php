@@ -67,6 +67,10 @@
                 </div>
 
                 <div>
+                    @include('partials.supply-select', ['supplies' => $supplies, 'selected' => old('supply_id', $inventory->supply_id)])
+                </div>
+
+                <div>
                     <label for="received_date" class="block text-sm font-medium text-gray-700 mb-2">
                         Date received
                     </label>

@@ -115,21 +115,59 @@
             </div>
         </div>
 
-        <!-- Payment Information -->
-        @if($sale->payments->count() > 0)
+        <!-- Payment / balance -->
         <div class="mt-6 pt-6 border-t">
-            <h3 class="text-sm font-semibold text-gray-900 mb-3">Payment Information</h3>
-            @foreach($sale->payments as $payment)
-            <div class="flex justify-between items-center text-sm">
-                <span class="text-gray-600">{{ $payment->payment_method }}</span>
-                <span class="font-medium text-gray-900">KES {{ number_format($payment->amount, 2) }}</span>
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">Payment status</h3>
+            <div class="flex flex-wrap gap-4 text-sm mb-3">
+                <div>
+                    <span class="text-gray-500">Status</span>
+                    <p class="font-semibold capitalize">{{ $sale->payment_status }}</p>
+                </div>
+                @if($sale->is_credit)
+                <div>
+                    <span class="text-gray-500">Credit sale</span>
+                    <p class="font-semibold text-amber-700">Yes</p>
+                </div>
+                @endif
+                @if($sale->due_date)
+                <div>
+                    <span class="text-gray-500">Due date</span>
+                    <p class="font-semibold">{{ $sale->due_date->format('M d, Y') }}</p>
+                </div>
+                @endif
+                <div>
+                    <span class="text-gray-500">Paid</span>
+                    <p class="font-semibold">KES {{ number_format($sale->amountPaid(), 2) }}</p>
+                </div>
+                @if($sale->balanceDue() > 0)
+                <div>
+                    <span class="text-gray-500">Balance due</span>
+                    <p class="font-semibold text-red-600">KES {{ number_format($sale->balanceDue(), 2) }}</p>
+                </div>
+                @endif
             </div>
-            @if($payment->transaction_reference)
-            <p class="text-xs text-gray-500 mt-1">Ref: {{ $payment->transaction_reference }}</p>
+            @if($sale->credit_notes)
+            <p class="text-sm text-gray-600 mb-3">{{ $sale->credit_notes }}</p>
             @endif
-            @endforeach
+            @if($sale->payments->count() > 0)
+            <div class="space-y-2 mb-4">
+                @foreach($sale->payments as $payment)
+                <div class="flex justify-between items-center text-sm bg-gray-50 rounded px-3 py-2">
+                    <span class="text-gray-600">{{ $payment->payment_method }} · {{ $payment->payment_date->format('M d, Y') }}</span>
+                    <span class="font-medium text-gray-900">KES {{ number_format($payment->amount, 2) }}</span>
+                </div>
+                @if($payment->transaction_reference)
+                <p class="text-xs text-gray-500 -mt-1 ml-3">Ref: {{ $payment->transaction_reference }}</p>
+                @endif
+                @endforeach
+            </div>
+            @endif
+            @if($sale->balanceDue() > 0.01)
+            <div class="no-print">
+                @include('debtors.partials.payment-form', ['sale' => $sale])
+            </div>
+            @endif
         </div>
-        @endif
 
         <!-- eTIMS Information -->
         @if($sale->generate_etims_receipt)

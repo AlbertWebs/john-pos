@@ -40,4 +40,25 @@ class Customer extends Model
     {
         return $this->sales()->count();
     }
+
+    public function outstandingBalance(): float
+    {
+        return round(
+            $this->sales()
+                ->with('payments')
+                ->outstanding()
+                ->get()
+                ->sum(fn (Sale $sale) => $sale->balanceDue()),
+            2
+        );
+    }
+
+    public function openCreditSales()
+    {
+        return $this->sales()
+            ->with(['payments', 'saleItems.part', 'user'])
+            ->outstanding()
+            ->orderByDesc('date');
+    }
 }
+

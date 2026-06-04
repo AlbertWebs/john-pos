@@ -30,6 +30,24 @@
             </div>
         </a>
 
+        <!-- Stock Value Report Card -->
+        <a href="{{ route('reports.stock-value') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 hover:border-teal-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-teal-100 p-4 rounded-lg">
+                    <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Stock Value</h3>
+                    <p class="text-sm text-gray-500 mt-1">Inventory value at cost and retail, by category</p>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+
         <!-- Inventory Report Card -->
         <a href="{{ route('reports.inventory') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 hover:border-green-500">
             <div class="flex items-center gap-4">
@@ -77,6 +95,60 @@
                 <div class="flex-1">
                     <h3 class="text-lg font-semibold text-gray-900">Sold price vs cost</h3>
                     <p class="text-sm text-gray-500 mt-1">Average sold price and margin per item</p>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Accounts Receivable Card -->
+        <a href="{{ route('reports.accounts-receivable') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 hover:border-orange-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-orange-100 p-4 rounded-lg">
+                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Accounts Receivable</h3>
+                    <p class="text-sm text-gray-500 mt-1">Debtor balances, aging, and collections</p>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Double Entry Card -->
+        <a href="{{ route('reports.double-entry') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 hover:border-slate-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-100 p-4 rounded-lg">
+                    <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Double Entry</h3>
+                    <p class="text-sm text-gray-500 mt-1">Debits and credits journal for a period</p>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Product History Card -->
+        <a href="{{ route('reports.product-history') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-2 hover:border-purple-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-purple-100 p-4 rounded-lg">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">Product buy & sell history</h3>
+                    <p class="text-sm text-gray-500 mt-1">When a product was received and sold</p>
                 </div>
                 <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

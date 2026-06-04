@@ -11,6 +11,8 @@ use App\Http\Controllers\VehicleMakeController;
 use App\Http\Controllers\VehicleModelController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\NextOrderController;
+use App\Http\Controllers\SupplyController;
+use App\Http\Controllers\DebtorController;
 
 // Public E-commerce Routes (for johllyautospares.co.ke)
 // These routes are accessible without authentication
@@ -91,6 +93,7 @@ Route::middleware('auth')->group(function () {
     // Supporting Tables (AJAX endpoints for dropdowns)
     Route::get('/api/categories', [CategoryController::class, 'index'])->name('api.categories');
     Route::get('/api/brands', [BrandController::class, 'index'])->name('api.brands');
+    Route::get('/api/supplies', [SupplyController::class, 'index'])->name('api.supplies');
     Route::get('/api/vehicle-makes', [VehicleMakeController::class, 'index'])->name('api.vehicleMakes');
     Route::get('/api/vehicle-models/{makeId}', [VehicleModelController::class, 'index'])->name('api.vehicleModels');
     
@@ -99,6 +102,9 @@ Route::middleware('auth')->group(function () {
     
     // Brands CRUD (for management)
     Route::resource('brands', BrandController::class);
+
+    // Supplies (suppliers)
+    Route::resource('supplies', SupplyController::class);
     
     // Vehicle Makes CRUD (for management)
     Route::resource('vehicle-makes', VehicleMakeController::class);
@@ -120,6 +126,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales/{sale}', [\App\Http\Controllers\SaleController::class, 'show'])->name('sales.show');
     Route::get('/sales/{sale}/print', [\App\Http\Controllers\SaleController::class, 'print'])->name('sales.print');
 
+    // Debtor management (credit sales & payments)
+    Route::get('/debtors', [DebtorController::class, 'index'])->name('debtors.index');
+    Route::get('/debtors/{customer}', [DebtorController::class, 'show'])->name('debtors.show');
+    Route::post('/debtors/sales/{sale}/payments', [DebtorController::class, 'recordPayment'])->name('debtors.sales.payments.store');
+
     // Next Orders (Backorder requests)
     Route::get('/next-orders', [NextOrderController::class, 'index'])->name('next-orders.index');
     Route::post('/next-orders', [NextOrderController::class, 'store'])->name('next-orders.store');
@@ -130,8 +141,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/sales', [\App\Http\Controllers\ReportController::class, 'sales'])->name('reports.sales');
     Route::get('/reports/inventory', [\App\Http\Controllers\ReportController::class, 'inventory'])->name('reports.inventory');
+    Route::get('/reports/stock-value', [\App\Http\Controllers\ReportController::class, 'stockValue'])->name('reports.stock-value');
     Route::get('/reports/top-selling', [\App\Http\Controllers\ReportController::class, 'topSelling'])->name('reports.top-selling');
     Route::get('/reports/sold-vs-cost', [\App\Http\Controllers\ReportController::class, 'soldVsCost'])->name('reports.sold-vs-cost');
+    Route::get('/reports/product-history', [\App\Http\Controllers\ReportController::class, 'productHistory'])->name('reports.product-history');
+    Route::get('/reports/double-entry', [\App\Http\Controllers\ReportController::class, 'doubleEntry'])->name('reports.double-entry');
+    Route::get('/reports/accounts-receivable', [\App\Http\Controllers\ReportController::class, 'accountsReceivable'])->name('reports.accounts-receivable');
     Route::get('/reports/stock-audit', [\App\Http\Controllers\StockAuditController::class, 'index'])->name('reports.stock-audit');
     Route::post('/reports/stock-audit/save', [\App\Http\Controllers\StockAuditController::class, 'storePhysical'])->name('reports.stock-audit.save');
     Route::get('/most-selling-items', [\App\Http\Controllers\ReportController::class, 'mostSelling'])->name('most-selling.index');

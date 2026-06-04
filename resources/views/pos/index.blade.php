@@ -546,7 +546,7 @@
                                 </div>
 
                                 <div class="space-y-3">
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <button 
                                             @click="paymentMethod = 'Cash'"
                                             class="py-3 px-4 rounded-xl font-bold text-sm transition transform hover:scale-105 shadow-md"
@@ -569,6 +569,26 @@
                                         >
                                             ⚡ Prompt
                                         </button>
+                                        <button 
+                                            type="button"
+                                            @click="paymentMethod = 'Credit'; useSTKPush = false; selectedPendingPayment = null;"
+                                            class="py-3 px-4 rounded-xl font-bold text-sm transition transform hover:scale-105 shadow-md"
+                                            :class="paymentMethod === 'Credit' ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                                        >
+                                            📋 On Credit
+                                        </button>
+                                    </div>
+
+                                    <div x-show="paymentMethod === 'Credit'" class="bg-amber-50 border-2 border-amber-200 rounded-xl p-3 space-y-3">
+                                        <p class="text-sm text-amber-900 font-medium">Credit sale — customer required. Stock is issued now; payment is recorded later under Debtors.</p>
+                                        <div>
+                                            <label class="block text-xs font-medium text-amber-800 mb-1">Due date (optional)</label>
+                                            <input type="date" x-model="dueDate" class="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-amber-800 mb-1">Notes (optional)</label>
+                                            <input type="text" x-model="creditNotes" placeholder="Terms, PO number..." class="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm">
+                                        </div>
                                     </div>
 
                                     <div x-show="paymentMethod === 'M-Pesa'" class="space-y-3">
@@ -1203,7 +1223,10 @@ function posInterface() {
         cart: [],
         customerSearch: '',
         selectedCustomer: null,
-        paymentMethod: 'Cash',
+        paymentMethod: @json($creditMode ?? false ? 'Credit' : 'Cash'),
+        creditMode: @json($creditMode ?? false),
+        dueDate: '',
+        creditNotes: '',
         useSTKPush: false,
         mpesaPhoneNumber: '',
         transactionReference: '',
@@ -1926,6 +1949,14 @@ function posInterface() {
                 return;
             }
 
+            if (this.paymentMethod === 'Credit') {
+                if (!this.selectedCustomer) {
+                    this.showNotification('Select a customer for credit (debtor) sales', 'error');
+                    this.showCustomerModal = true;
+                    return;
+                }
+            }
+
             if (this.paymentMethod === 'M-Pesa') {
                 // If C2B payment is selected, validate it
                 if (this.selectedPendingPayment) {
@@ -1961,6 +1992,8 @@ function posInterface() {
                             price: item.price,
                         })),
                         payment_method: this.paymentMethod,
+                        due_date: this.paymentMethod === 'Credit' ? (this.dueDate || null) : null,
+                        credit_notes: this.paymentMethod === 'Credit' ? (this.creditNotes || null) : null,
                         transaction_reference: this.selectedPendingPayment ? this.selectedPendingPayment.transaction_reference : (this.transactionReference || null),
                         pending_payment_id: this.selectedPendingPayment ? this.selectedPendingPayment.id : null,
                         subtotal: this.cartTotal.subtotal,
@@ -1973,14 +2006,18 @@ function posInterface() {
 
                 const saleData = await saleResponse.json();
 
-                if (saleData.success) {
-                    // Show eTIMS message if present
-                    if (saleData.etims_message) {
-                        this.showNotification(saleData.etims_message, saleData.etims_message.includes('failed') || saleData.etims_message.includes('Error') ? 'warning' : 'success');
-                    }
-                    
-                    // If C2B payment was selected, allocate it to the sale
-                    if (this.selectedPendingPayment && this.paymentMethod === 'M-Pesa') {
+                    if (saleData.success) {
+                        if (this.paymentMethod === 'Credit') {
+                            this.showNotification('Credit sale recorded. Collect payment under Debtors.', 'success');
+                        }
+
+                        // Show eTIMS message if present
+                        if (saleData.etims_message) {
+                            this.showNotification(saleData.etims_message, saleData.etims_message.includes('failed') || saleData.etims_message.includes('Error') ? 'warning' : 'success');
+                        }
+                        
+                        // If C2B payment was selected, allocate it to the sale
+                        if (this.selectedPendingPayment && this.paymentMethod === 'M-Pesa') {
                         try {
                             const allocateResponse = await fetch(`/pending-payments/${this.selectedPendingPayment.id}/allocate`, {
                                 method: 'POST',

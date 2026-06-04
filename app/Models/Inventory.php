@@ -23,6 +23,7 @@ class Inventory extends Model
         'image',
         'brand_id',
         'category_id',
+        'supply_id',
         'vehicle_make_id',
         'vehicle_model_id',
         'year_range',
@@ -55,6 +56,11 @@ class Inventory extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function supply()
+    {
+        return $this->belongsTo(Supply::class);
     }
 
     public function vehicleMake()
@@ -166,16 +172,26 @@ class Inventory extends Model
     /**
      * Add stock and record a purchase movement for audit/reporting.
      */
-    public function addStock(int $quantity, ?Carbon $receivedAt, ?string $notes, int $userId): InventoryMovement
-    {
-        return DB::transaction(function () use ($quantity, $receivedAt, $notes, $userId) {
+    public function addStock(
+        int $quantity,
+        ?Carbon $receivedAt,
+        ?string $notes,
+        int $userId,
+        ?int $supplyId = null
+    ): InventoryMovement {
+        return DB::transaction(function () use ($quantity, $receivedAt, $notes, $userId, $supplyId) {
             $this->increment('stock_quantity', $quantity);
+
+            if ($supplyId && ! $this->supply_id) {
+                $this->update(['supply_id' => $supplyId]);
+            }
 
             return InventoryMovement::create([
                 'part_id' => $this->id,
                 'change_quantity' => $quantity,
                 'movement_type' => 'purchase',
                 'user_id' => $userId,
+                'supply_id' => $supplyId,
                 'notes' => $notes,
                 'timestamp' => $receivedAt ?? now(),
             ]);

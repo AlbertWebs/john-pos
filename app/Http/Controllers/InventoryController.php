@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Brand;
 use App\Models\VehicleMake;
 use App\Models\VehicleModel;
+use App\Models\Supply;
 use App\Imports\InventoryImport;
 use App\Exports\InventoryTemplateExport;
 use Carbon\Carbon;
@@ -88,7 +89,9 @@ class InventoryController extends Controller
             ->orderBy('model_name')
             ->get();
 
-        return view('inventory.create', compact('categories', 'brands', 'vehicleMakes', 'allVehicleModels'));
+        $supplies = Supply::active()->orderBy('name')->get();
+
+        return view('inventory.create', compact('categories', 'brands', 'vehicleMakes', 'allVehicleModels', 'supplies'));
     }
 
     /**
@@ -103,6 +106,7 @@ class InventoryController extends Controller
             'description' => 'nullable|string',
             'brand_id' => 'nullable|exists:brands,id',
             'category_id' => 'nullable|exists:categories,id',
+            'supply_id' => 'nullable|exists:supplies,id',
             'vehicle_make_id' => 'nullable|exists:vehicle_makes,id',
             'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
             'vehicle_model_ids' => 'nullable|array',
@@ -129,8 +133,21 @@ class InventoryController extends Controller
             $validated['location'] = 'Shef';
         }
 
+        $initialQty = (int) $validated['stock_quantity'];
+        $supplyId = $validated['supply_id'] ?? null;
+        $validated['stock_quantity'] = 0;
+
         $inventory = Inventory::create($validated);
-        
+
+        if ($initialQty > 0) {
+            $supplyName = $supplyId ? Supply::find($supplyId)?->name : null;
+            $notes = $supplyName
+                ? "Initial stock from {$supplyName}"
+                : 'Initial stock on item creation';
+
+            $inventory->addStock($initialQty, null, $notes, Auth::id(), $supplyId);
+        }
+
         // Sync vehicle models (many-to-many)
         if (!empty($vehicleModelIds)) {
             $inventory->vehicleModels()->sync($vehicleModelIds);
@@ -145,11 +162,11 @@ class InventoryController extends Controller
      */
     public function show(Inventory $inventory)
     {
-        $inventory->load(['category', 'brand', 'vehicleMake', 'vehicleModel', 'priceHistories.changedBy']);
+        $inventory->load(['category', 'brand', 'supply', 'vehicleMake', 'vehicleModel', 'priceHistories.changedBy']);
 
         $stockReceipts = $inventory->inventoryMovements()
             ->where('movement_type', 'purchase')
-            ->with('user')
+            ->with(['user', 'supply'])
             ->orderByDesc('timestamp')
             ->limit(10)
             ->get();
@@ -176,7 +193,9 @@ class InventoryController extends Controller
         $inventory->load('vehicleModels');
         $selectedVehicleModelIds = $inventory->vehicleModels->pluck('id')->toArray();
 
-        return view('inventory.edit', compact('inventory', 'categories', 'brands', 'vehicleMakes', 'allVehicleModels', 'selectedVehicleModelIds'));
+        $supplies = Supply::active()->orderBy('name')->get();
+
+        return view('inventory.edit', compact('inventory', 'categories', 'brands', 'vehicleMakes', 'allVehicleModels', 'selectedVehicleModelIds', 'supplies'));
     }
 
     /**
@@ -191,6 +210,7 @@ class InventoryController extends Controller
             'description' => 'nullable|string',
             'brand_id' => 'nullable|exists:brands,id',
             'category_id' => 'nullable|exists:categories,id',
+            'supply_id' => 'nullable|exists:supplies,id',
             'vehicle_make_id' => 'nullable|exists:vehicle_makes,id',
             'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
             'vehicle_model_ids' => 'nullable|array',
@@ -242,7 +262,9 @@ class InventoryController extends Controller
      */
     public function addStockForm(Inventory $inventory)
     {
-        return view('inventory.add-stock', compact('inventory'));
+        $supplies = Supply::active()->orderBy('name')->get();
+
+        return view('inventory.add-stock', compact('inventory', 'supplies'));
     }
 
     /**
@@ -253,6 +275,7 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
             'received_date' => 'nullable|date|before_or_equal:today',
+            'supply_id' => 'nullable|exists:supplies,id',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -261,11 +284,21 @@ class InventoryController extends Controller
             ? Carbon::parse($validated['received_date'])->startOfDay()
             : null;
 
+        $supplyId = $validated['supply_id'] ?? $inventory->supply_id;
+        $notes = $validated['notes'] ?? null;
+        if ($supplyId && ! $notes) {
+            $supplyName = Supply::find($supplyId)?->name;
+            if ($supplyName) {
+                $notes = "Stock from {$supplyName}";
+            }
+        }
+
         $inventory->addStock(
             (int) $validated['quantity'],
             $receivedAt,
-            $validated['notes'] ?? null,
-            Auth::id()
+            $notes,
+            Auth::id(),
+            $supplyId
         );
 
         $inventory->refresh();

@@ -360,6 +360,12 @@
                         @enderror
                     </div>
 
+                    <!-- Supply -->
+                    <div class="md:col-span-2">
+                        @include('partials.supply-select', ['supplies' => $supplies, 'selected' => old('supply_id')])
+                        <p class="mt-1 text-xs text-gray-500">Select who supplied this stock when adding initial quantity.</p>
+                    </div>
+
                     <!-- Stock Quantity -->
                     <div>
                         <label for="stock_quantity" class="block text-sm font-medium text-gray-700 mb-2">

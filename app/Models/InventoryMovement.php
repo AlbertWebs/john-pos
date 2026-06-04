@@ -16,6 +16,7 @@ class InventoryMovement extends Model
         'reference_id',
         'reference_type',
         'user_id',
+        'supply_id',
         'notes',
         'timestamp',
     ];
@@ -37,5 +38,10 @@ class InventoryMovement extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function supply()
+    {
+        return $this->belongsTo(Supply::class);
     }
 }
