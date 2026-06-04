@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Inventory extends Model
 {
@@ -159,6 +161,25 @@ class Inventory extends Model
     public function isLowStock()
     {
         return $this->stock_quantity <= $this->reorder_level;
+    }
+
+    /**
+     * Add stock and record a purchase movement for audit/reporting.
+     */
+    public function addStock(int $quantity, ?Carbon $receivedAt, ?string $notes, int $userId): InventoryMovement
+    {
+        return DB::transaction(function () use ($quantity, $receivedAt, $notes, $userId) {
+            $this->increment('stock_quantity', $quantity);
+
+            return InventoryMovement::create([
+                'part_id' => $this->id,
+                'change_quantity' => $quantity,
+                'movement_type' => 'purchase',
+                'user_id' => $userId,
+                'notes' => $notes,
+                'timestamp' => $receivedAt ?? now(),
+            ]);
+        });
     }
 
     public static function generateSku(array $data): string

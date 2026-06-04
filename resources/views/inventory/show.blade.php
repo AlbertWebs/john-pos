@@ -17,6 +17,12 @@
                 <p class="text-gray-600 mt-1">Part Number: {{ $inventory->part_number }}</p>
             </div>
             <div class="flex gap-3">
+                <a href="{{ route('inventory.add-stock', $inventory) }}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Add Stock
+                </a>
                 <a href="{{ route('inventory.edit', $inventory) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -26,6 +32,10 @@
             </div>
         </div>
     </div>
+
+    @if(session('success'))
+    <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">{{ session('success') }}</div>
+    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Main Information -->
@@ -163,6 +173,35 @@
                 </div>
             </div>
             @endif
+
+            <!-- Stock received history -->
+            @if(isset($stockReceipts) && $stockReceipts->count() > 0)
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Stock Received History</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Added by</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($stockReceipts as $receipt)
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-900">{{ $receipt->timestamp->format('M d, Y') }}</td>
+                                <td class="px-4 py-3 text-sm text-right font-semibold text-green-700">+{{ $receipt->change_quantity }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-900">{{ $receipt->user?->name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ $receipt->notes ?: '—' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
         </div>
 
         <!-- Sidebar -->
@@ -171,6 +210,9 @@
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                 <div class="space-y-2">
+                    <a href="{{ route('inventory.add-stock', $inventory) }}" class="block w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
+                        Add Stock
+                    </a>
                     <a href="{{ route('inventory.edit', $inventory) }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
                         Edit Item
                     </a>

@@ -9,6 +9,7 @@ use App\Models\VehicleMake;
 use App\Models\VehicleModel;
 use App\Imports\InventoryImport;
 use App\Exports\InventoryTemplateExport;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -145,8 +146,15 @@ class InventoryController extends Controller
     public function show(Inventory $inventory)
     {
         $inventory->load(['category', 'brand', 'vehicleMake', 'vehicleModel', 'priceHistories.changedBy']);
-        
-        return view('inventory.show', compact('inventory'));
+
+        $stockReceipts = $inventory->inventoryMovements()
+            ->where('movement_type', 'purchase')
+            ->with('user')
+            ->orderByDesc('timestamp')
+            ->limit(10)
+            ->get();
+
+        return view('inventory.show', compact('inventory', 'stockReceipts'));
     }
 
     /**
@@ -227,6 +235,44 @@ class InventoryController extends Controller
 
         return redirect()->route('inventory.index')
             ->with('success', 'Inventory item updated successfully.');
+    }
+
+    /**
+     * Show form to add stock to an existing item.
+     */
+    public function addStockForm(Inventory $inventory)
+    {
+        return view('inventory.add-stock', compact('inventory'));
+    }
+
+    /**
+     * Record stock receipt and increment on-hand quantity.
+     */
+    public function addStockStore(Request $request, Inventory $inventory)
+    {
+        $validated = $request->validate([
+            'quantity' => 'required|integer|min:1',
+            'received_date' => 'nullable|date|before_or_equal:today',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $previousQty = $inventory->stock_quantity;
+        $receivedAt = ! empty($validated['received_date'])
+            ? Carbon::parse($validated['received_date'])->startOfDay()
+            : null;
+
+        $inventory->addStock(
+            (int) $validated['quantity'],
+            $receivedAt,
+            $validated['notes'] ?? null,
+            Auth::id()
+        );
+
+        $inventory->refresh();
+
+        return redirect()
+            ->route('inventory.show', $inventory)
+            ->with('success', "Added {$validated['quantity']} unit(s). Stock: {$previousQty} → {$inventory->stock_quantity}.");
     }
 
     /**

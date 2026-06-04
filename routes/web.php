@@ -64,6 +64,10 @@ Route::middleware('auth')->group(function () {
         ->name('inventory.template');
     Route::get('/inventory/check-unique', [InventoryController::class, 'checkUnique'])
         ->name('inventory.checkUnique');
+    Route::get('/inventory/{inventory}/add-stock', [InventoryController::class, 'addStockForm'])
+        ->name('inventory.add-stock');
+    Route::post('/inventory/{inventory}/add-stock', [InventoryController::class, 'addStockStore'])
+        ->name('inventory.add-stock.store');
     Route::resource('inventory', InventoryController::class);
     Route::get('/inventory/ajax/vehicle-models', [InventoryController::class, 'getVehicleModels'])
         ->name('inventory.getVehicleModels');
