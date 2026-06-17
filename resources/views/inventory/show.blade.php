@@ -3,6 +3,9 @@
 @section('title', 'Inventory Details')
 
 @section('content')
+@php
+    $canEditInventory = auth()->user()?->can('edit inventory') || auth()->user()?->isSuperAdmin();
+@endphp
 <div class="max-w-6xl mx-auto">
     <div class="mb-6">
         <a href="{{ route('inventory.index') }}" class="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4">
@@ -23,12 +26,14 @@
                     </svg>
                     Add Stock
                 </a>
+                @if($canEditInventory)
                 <a href="{{ route('inventory.edit', $inventory) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
                     Edit
                 </a>
+                @endif
             </div>
         </div>
     </div>
@@ -223,14 +228,17 @@
                     <a href="{{ route('inventory.add-stock', $inventory) }}" class="block w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
                         Add Stock
                     </a>
+                    @if($canEditInventory)
                     <a href="{{ route('inventory.edit', $inventory) }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
                         Edit Item
                     </a>
+                    @endif
                     @can('view reports')
                     <a href="{{ route('reports.product-history', ['part_id' => $inventory->id]) }}" class="block w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
                         Buy & sell history
                     </a>
                     @endcan
+                    @if($canEditInventory)
                     @if($inventory->saleItems->count() == 0)
                     <form method="POST" action="{{ route('inventory.destroy', $inventory) }}" onsubmit="return confirm('Are you sure you want to delete this item?');">
                         @csrf
@@ -243,6 +251,7 @@
                     <button disabled class="block w-full bg-gray-300 text-gray-500 py-2 px-4 rounded-lg text-center font-medium cursor-not-allowed">
                         Cannot Delete (Used in Sales)
                     </button>
+                    @endif
                     @endif
                 </div>
             </div>

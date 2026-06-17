@@ -19,6 +19,16 @@ use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
 {
+    protected function ensureCanEditInventory(): void
+    {
+        $user = Auth::user();
+
+        abort_unless(
+            $user && ($user->can('edit inventory') || $user->isSuperAdmin()),
+            403
+        );
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -179,6 +189,8 @@ class InventoryController extends Controller
      */
     public function edit(Inventory $inventory)
     {
+        $this->ensureCanEditInventory();
+
         $categories = Category::orderBy('name')->get();
         $brands = Brand::orderBy('brand_name')->get();
         $vehicleMakes = VehicleMake::orderBy('make_name')->get();
@@ -203,6 +215,8 @@ class InventoryController extends Controller
      */
     public function update(Request $request, Inventory $inventory)
     {
+        $this->ensureCanEditInventory();
+
         $validated = $request->validate([
             'part_number' => 'required|string|max:255|unique:inventory,part_number,' . $inventory->id,
             'barcode' => 'nullable|string|max:255|unique:inventory,barcode,' . $inventory->id,
@@ -313,6 +327,8 @@ class InventoryController extends Controller
      */
     public function destroy(Inventory $inventory)
     {
+        $this->ensureCanEditInventory();
+
         // Check if item has been used in sales
         if ($inventory->saleItems()->count() > 0) {
             return redirect()->route('inventory.index')
@@ -330,6 +346,8 @@ class InventoryController extends Controller
      */
     public function bulkDelete(Request $request)
     {
+        $this->ensureCanEditInventory();
+
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'required|exists:inventory,id',

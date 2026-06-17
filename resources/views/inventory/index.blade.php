@@ -3,6 +3,9 @@
 @section('title', 'Inventory Management')
 
 @section('content')
+@php
+    $canEditInventory = auth()->user()?->can('edit inventory') || auth()->user()?->isSuperAdmin();
+@endphp
 <div class="space-y-6" x-data="{ showFilters: false }">
     <!-- Header with Actions -->
     <div class="flex justify-between items-center">
@@ -148,6 +151,7 @@
     </div>
 
     <!-- Bulk Actions -->
+    @if($canEditInventory)
     <div class="bg-white rounded-lg shadow-md p-4 mb-4" x-data="bulkActions()" x-show="selectedItems.length > 0">
         <div class="flex justify-between items-center">
             <span class="text-sm font-medium text-gray-700">
@@ -164,6 +168,7 @@
             </button>
         </div>
     </div>
+    @endif
 
     <!-- Inventory Table -->
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -171,6 +176,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        @if($canEditInventory)
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                             <input 
                                 type="checkbox" 
@@ -178,6 +184,7 @@
                                 class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                             >
                         </th>
+                        @endif
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part Number</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
@@ -193,6 +200,7 @@
                 <tbody class="bg-white divide-y divide-gray-200" x-data="{ selectedItems: [] }">
                     @forelse($inventory as $item)
                     <tr class="hover:bg-gray-50 transition">
+                        @if($canEditInventory)
                         <td class="px-6 py-4 whitespace-nowrap">
                             <input 
                                 type="checkbox" 
@@ -201,6 +209,7 @@
                                 class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                             >
                         </td>
+                        @endif
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">{{ $item->part_number }}</div>
                             @if($item->sku)
@@ -271,6 +280,7 @@
                                         </svg>
                                         View
                                     </a>
+                                    @if($canEditInventory)
                                     <a
                                         href="{{ route('inventory.edit', $item) }}"
                                         class="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -281,7 +291,9 @@
                                         </svg>
                                         Edit
                                     </a>
+                                    @endif
                                 </div>
+                                @if($canEditInventory)
                                 <form
                                     action="{{ route('inventory.destroy', $item) }}"
                                     method="POST"
@@ -302,6 +314,7 @@
                                         Remove item
                                     </button>
                                 </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

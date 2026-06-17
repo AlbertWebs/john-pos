@@ -16,6 +16,9 @@ class RolePermissionSeeder extends Seeder
         // Create permissions
         $permissions = [
             'manage inventory',
+            'add inventory',
+            'edit inventory',
+            'delete inventory',
             'view sales',
             'create sales',
             'edit sales',
@@ -47,7 +50,8 @@ class RolePermissionSeeder extends Seeder
             'view customers',
             'manage customers',
             'process payments',
-            'manage inventory', // Can add stock
+            'manage inventory',
+            'add inventory',
         ]);
     }
 }
