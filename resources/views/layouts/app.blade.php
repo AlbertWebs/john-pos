@@ -513,6 +513,15 @@
                         </svg>
                         <span x-show="!sidebarCollapsed" class="font-medium">Settings</span>
                     </a>
+                    <a href="{{ route('account.pin.edit') }}"
+                       class="flex items-center {{ request()->routeIs('account.pin.*') ? 'bg-white/20 text-white shadow-lg' : 'text-blue-100 hover:bg-white/10' }} px-4 py-3 rounded-xl mb-2 transition-all group"
+                       title="Change Login PIN"
+                    >
+                        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        <span x-show="!sidebarCollapsed" class="font-medium">Change PIN</span>
+                    </a>
                     @endunless
                 </div>
             </nav>
@@ -640,6 +649,14 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                             </svg>
                                             Settings
+                                        </div>
+                                    </a>
+                                    <a href="{{ route('account.pin.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                            Change my PIN
                                         </div>
                                     </a>
                                     @endunless

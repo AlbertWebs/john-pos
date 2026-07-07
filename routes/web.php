@@ -167,6 +167,10 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
     Route::put('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
+
+    // Admin account: change own login PIN (super_admin only)
+    Route::get('/account/change-pin', [\App\Http\Controllers\AccountPinController::class, 'edit'])->name('account.pin.edit');
+    Route::put('/account/change-pin', [\App\Http\Controllers\AccountPinController::class, 'update'])->name('account.pin.update');
     
     // Admin Pages (only for super_admin)
     Route::prefix('admin')->name('admin.')->group(function () {
