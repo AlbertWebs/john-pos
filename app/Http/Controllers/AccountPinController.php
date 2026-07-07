@@ -8,24 +8,17 @@ use Illuminate\Validation\ValidationException;
 
 class AccountPinController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(function ($request, $next) {
-            if (auth()->user()?->isCashier()) {
-                abort(403, 'Only administrators can change their PIN here. Contact your manager for help.');
-            }
-
-            return $next($request);
-        });
-    }
-
     public function edit()
     {
+        $this->ensureAdministrator();
+
         return view('account.change-pin');
     }
 
     public function update(Request $request)
     {
+        $this->ensureAdministrator();
+
         $validated = $request->validate([
             'current_pin' => ['required', 'string', 'size:4', 'regex:/^[0-9]{4}$/'],
             'new_pin' => ['required', 'string', 'size:4', 'regex:/^[0-9]{4}$/', 'different:current_pin'],
@@ -59,5 +52,12 @@ class AccountPinController extends Controller
         return redirect()
             ->route('login')
             ->with('success', 'Your PIN has been changed. Please log in again with your new PIN.');
+    }
+
+    protected function ensureAdministrator(): void
+    {
+        if (auth()->user()?->isCashier()) {
+            abort(403, 'Only administrators can change their PIN here. Contact your manager for help.');
+        }
     }
 }
