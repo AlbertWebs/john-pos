@@ -28,23 +28,27 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         // Basic stats that everyone can see
+        $paidStatuses = ['paid', 'completed'];
+
         $todayClosingSales = Sale::whereDate('date', today())
-            ->whereNotIn('payment_status', ['pending'])
+            ->whereIn('payment_status', $paidStatuses)
             ->sum('total_amount');
 
-        $todayProfit = DB::table('sale_items')
+        $todayCogs = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('inventory', 'sale_items.part_id', '=', 'inventory.id')
             ->whereDate('sales.date', today())
-            ->whereNotIn('sales.payment_status', ['pending'])
-            ->sum(DB::raw('sale_items.quantity * (sale_items.price - inventory.cost_price)'));
+            ->whereIn('sales.payment_status', $paidStatuses)
+            ->sum(DB::raw('sale_items.quantity * inventory.cost_price'));
+
+        $todayProfit = $todayClosingSales - $todayCogs;
 
         $stats = [
             'today_sales' => Sale::whereDate('date', today())->sum('total_amount') ?? 0,
             'today_transactions' => Sale::whereDate('date', today())->count() ?? 0,
             'today_closing_sales' => $todayClosingSales ?? 0,
             'today_closing_count' => Sale::whereDate('date', today())
-                ->whereNotIn('payment_status', ['pending'])
+                ->whereIn('payment_status', $paidStatuses)
                 ->count() ?? 0,
             'today_profit' => $todayProfit ?? 0,
             'low_stock_items' => Inventory::whereColumn('stock_quantity', '<=', 'reorder_level')
