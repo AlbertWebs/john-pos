@@ -11,7 +11,7 @@
             <div class="flex items-center justify-between">
                 <div class="min-w-0">
                     <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Invoiced</p>
-                    <p class="text-xl font-bold text-gray-900 mt-1 truncate">KES {{ number_format($stats['today_sales'] ?? 0, 2) }}</p>
+                    <p class="text-lg md:text-xl font-extrabold text-gray-900 mt-1 leading-tight truncate">KES {{ number_format($stats['today_sales'] ?? 0, 2) }}</p>
                     <p class="text-xs text-gray-500 mt-0.5">{{ $stats['today_transactions'] ?? 0 }} invoices today</p>
                 </div>
                 <div class="bg-blue-100 p-2.5 rounded-full flex-shrink-0 ml-2">
@@ -27,7 +27,7 @@
             <div class="flex items-center justify-between">
                 <div class="min-w-0">
                     <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Closing Sales</p>
-                    <p class="text-xl font-bold text-gray-900 mt-1 truncate">KES {{ number_format($stats['today_closing_sales'] ?? 0, 2) }}</p>
+                    <p class="text-lg md:text-xl font-extrabold text-gray-900 mt-1 leading-tight truncate">KES {{ number_format($stats['today_closing_sales'] ?? 0, 2) }}</p>
                     <p class="text-xs text-gray-500 mt-0.5">{{ $stats['today_closing_count'] ?? 0 }} paid today</p>
                 </div>
                 <div class="bg-teal-100 p-2.5 rounded-full flex-shrink-0 ml-2">
@@ -44,7 +44,7 @@
             <div class="flex items-center justify-between">
                 <div class="min-w-0">
                     <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Today's Profit</p>
-                    <p class="text-xl font-bold mt-1 truncate {{ $profit >= 0 ? 'text-green-700' : 'text-amber-700' }}">
+                    <p class="text-lg md:text-xl font-extrabold mt-1 leading-tight truncate {{ $profit >= 0 ? 'text-green-700' : 'text-amber-700' }}">
                         KES {{ number_format($profit, 2) }}
                     </p>
                     <p class="text-xs mt-0.5 {{ $profit >= 0 ? 'text-green-600' : 'text-amber-600' }}">
@@ -65,7 +65,7 @@
             <div class="flex items-center justify-between">
                 <div class="min-w-0">
                     <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Low Stock Items</p>
-                    <p class="text-xl font-bold text-gray-900 mt-1">{{ $stats['low_stock_items'] ?? 0 }}</p>
+                    <p class="text-lg md:text-xl font-extrabold text-gray-900 mt-1 leading-tight">{{ $stats['low_stock_items'] ?? 0 }}</p>
                     <p class="text-xs text-red-600 mt-0.5 font-medium">View all →</p>
                 </div>
                 <div class="bg-red-100 p-2.5 rounded-full flex-shrink-0 ml-2">
@@ -82,7 +82,7 @@
             <div class="flex items-center justify-between">
                 <div class="min-w-0">
                     <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Inventory Value</p>
-                    <p class="text-xl font-bold text-gray-900 mt-1 truncate">KES {{ number_format($stats['total_inventory_value'] ?? 0, 2) }}</p>
+                    <p class="text-lg md:text-xl font-extrabold text-gray-900 mt-1 leading-tight truncate">KES {{ number_format($stats['total_inventory_value'] ?? 0, 2) }}</p>
                     <p class="text-xs text-gray-500 mt-0.5">at cost price</p>
                 </div>
                 <div class="bg-purple-100 p-2.5 rounded-full flex-shrink-0 ml-2">
@@ -98,7 +98,7 @@
             <div class="flex items-center justify-between">
                 <div class="min-w-0">
                     <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Pending / Credit</p>
-                    <p class="text-xl font-bold text-gray-900 mt-1">{{ $stats['pending_orders'] ?? 0 }}</p>
+                    <p class="text-lg md:text-xl font-extrabold text-gray-900 mt-1 leading-tight">{{ $stats['pending_orders'] ?? 0 }}</p>
                     <p class="text-xs text-gray-500 mt-0.5">unpaid invoices</p>
                 </div>
                 <div class="bg-orange-100 p-2.5 rounded-full flex-shrink-0 ml-2">
