@@ -464,6 +464,7 @@
                                             </div>
                                             
                                             <div class="space-y-2 pt-2 border-t border-gray-200">
+                                                <!-- Regular price (read-only when bargain is set) -->
                                                 <div class="flex items-center gap-2">
                                                     <label class="text-xs font-semibold text-gray-700 whitespace-nowrap">Price:</label>
                                                     <input 
@@ -478,14 +479,46 @@
                                                     >
                                                     <span class="text-xs font-semibold text-gray-600 whitespace-nowrap">KES</span>
                                                 </div>
+
+                                                <!-- Bargain price input -->
+                                                <div class="flex items-center gap-2">
+                                                    <label class="text-xs font-semibold text-orange-600 whitespace-nowrap">Bargain:</label>
+                                                    <input 
+                                                        type="number" 
+                                                        x-model.number="item.bargain_price"
+                                                        @input="applyBargainPrice(index)"
+                                                        :min="item.cost_price"
+                                                        step="0.01"
+                                                        class="flex-1 px-2 py-1.5 border-2 rounded-lg text-sm font-medium"
+                                                        :class="item.bargain_price && Number(item.bargain_price) < Number(item.cost_price) ? 'border-red-500 bg-red-50 text-red-700' : 'border-orange-300 focus:ring-2 focus:ring-orange-400'"
+                                                        placeholder="Leave empty to keep price"
+                                                    >
+                                                    <span class="text-xs font-semibold text-gray-600 whitespace-nowrap">KES</span>
+                                                </div>
+
+                                                <!-- Per-item profit line -->
+                                                <div class="flex items-center justify-between text-xs rounded-lg px-2 py-1.5"
+                                                     :class="(Number(item.price) - Number(item.cost_price)) >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+                                                    <span class="font-semibold"
+                                                          :class="(Number(item.price) - Number(item.cost_price)) >= 0 ? 'text-green-700' : 'text-red-700'"
+                                                          x-text="(Number(item.price) - Number(item.cost_price)) >= 0 ? 'Profit per unit:' : 'LOSS per unit:'"
+                                                    ></span>
+                                                    <span class="font-bold"
+                                                          :class="(Number(item.price) - Number(item.cost_price)) >= 0 ? 'text-green-700' : 'text-red-700'"
+                                                          x-text="'KES ' + formatPrice(Math.abs((Number(item.price) - Number(item.cost_price)) * item.quantity))"
+                                                    ></span>
+                                                </div>
+
+                                                <!-- Validation hints -->
                                                 <div class="flex items-center justify-between text-xs">
+                                                    <span class="text-gray-500" x-text="'Cost: KES ' + formatPrice(item.cost_price)"></span>
                                                     <span 
                                                         class="text-xs font-medium"
-                                                        :class="Number(item.price) < Number(item.min_price) ? 'text-red-600' : 'text-gray-600'"
+                                                        :class="Number(item.price) < Number(item.min_price) ? 'text-red-600' : 'text-gray-500'"
                                                         x-text="'Min: KES ' + formatPrice(item.min_price)"
                                                     ></span>
                                                     <span 
-                                                        class="px-2.5 py-1 rounded-md font-semibold text-xs"
+                                                        class="px-2 py-0.5 rounded-md font-semibold text-xs"
                                                         :class="item.quantity > item.stock_quantity ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
                                                         x-text="'Stock: ' + item.stock_quantity"
                                                     ></span>
@@ -679,6 +712,29 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sale Profit Summary (shown when cart has items) -->
+                <div x-show="cart.length > 0" class="px-6 py-3 border-t border-indigo-100 bg-indigo-50/60">
+                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Estimated Profit This Sale</p>
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <div class="bg-white rounded-lg p-2 text-center border border-indigo-100">
+                            <p class="text-gray-500">Revenue</p>
+                            <p class="font-bold text-gray-800 mt-0.5" x-text="'KES ' + formatPrice(cartTotal.total)"></p>
+                        </div>
+                        <div class="bg-white rounded-lg p-2 text-center border border-indigo-100">
+                            <p class="text-gray-500">Cost (COGS)</p>
+                            <p class="font-bold text-gray-800 mt-0.5" x-text="'KES ' + formatPrice(cart.reduce((s, i) => s + (Number(i.cost_price) * i.quantity), 0))"></p>
+                        </div>
+                        <div class="rounded-lg p-2 text-center border"
+                             :class="(cartTotal.total - cart.reduce((s,i) => s + (Number(i.cost_price)*i.quantity), 0)) >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
+                            <p :class="(cartTotal.total - cart.reduce((s,i) => s + (Number(i.cost_price)*i.quantity), 0)) >= 0 ? 'text-green-600' : 'text-red-600'">Gross Profit</p>
+                            <p class="font-bold mt-0.5"
+                               :class="(cartTotal.total - cart.reduce((s,i) => s + (Number(i.cost_price)*i.quantity), 0)) >= 0 ? 'text-green-700' : 'text-red-700'"
+                               x-text="'KES ' + formatPrice(cartTotal.total - cart.reduce((s,i) => s + (Number(i.cost_price)*i.quantity), 0))"
+                            ></p>
                         </div>
                     </div>
                 </div>
@@ -1542,6 +1598,8 @@ function posInterface() {
                     name: product.name,
                     part_number: product.part_number,
                     price: product.selling_price,
+                    bargain_price: null,
+                    cost_price: product.cost_price,
                     quantity: 1,
                     stock_quantity: product.stock_quantity,
                     min_price: product.min_price,
@@ -1582,6 +1640,33 @@ function posInterface() {
                 item.quantity = item.stock_quantity;
                 this.showNotification('Quantity adjusted to available stock', 'warning');
             }
+            this.calculateTotal();
+        },
+
+        applyBargainPrice(index) {
+            const item = this.cart[index];
+            const bargain = Number(item.bargain_price);
+            const costPrice = Number(item.cost_price);
+
+            if (!item.bargain_price && item.bargain_price !== 0) {
+                this.calculateTotal();
+                return;
+            }
+
+            if (isNaN(bargain) || bargain <= 0) {
+                item.bargain_price = null;
+                this.calculateTotal();
+                return;
+            }
+
+            if (bargain < costPrice) {
+                this.showNotification(
+                    `Bargain price KES ${this.formatPrice(bargain)} is below cost price KES ${this.formatPrice(costPrice)} — this sale would make a loss.`,
+                    'error'
+                );
+            }
+
+            item.price = bargain;
             this.calculateTotal();
         },
 
@@ -1933,11 +2018,21 @@ function posInterface() {
             for (let item of this.cart) {
                 const price = Number(item.price);
                 const minPrice = Number(item.min_price);
-                
-                if (isNaN(price) || price < minPrice) {
-                    this.showNotification(`${item.name}: Price below minimum (KES ${this.formatPrice(item.min_price)})`, 'error');
+                const costPrice = Number(item.cost_price);
+
+                if (isNaN(price) || price < costPrice) {
+                    this.showNotification(
+                        `${item.name}: Price (KES ${this.formatPrice(price)}) is below cost price (KES ${this.formatPrice(costPrice)}). Sale blocked — this would result in a loss.`,
+                        'error'
+                    );
                     return;
                 }
+
+                if (price < minPrice) {
+                    this.showNotification(`${item.name}: Price below minimum allowed (KES ${this.formatPrice(minPrice)})`, 'error');
+                    return;
+                }
+
                 if (item.quantity > item.stock_quantity) {
                     this.showNotification(`${item.name}: Insufficient stock`, 'error');
                     return;

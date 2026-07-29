@@ -54,6 +54,12 @@ class SaleService
                     throw new \InvalidArgumentException("Insufficient stock for {$inventory->name}");
                 }
 
+                if ($item['price'] < $inventory->cost_price) {
+                    throw new \InvalidArgumentException(
+                        "Price for {$inventory->name} (KES {$item['price']}) is below cost price (KES {$inventory->cost_price}). Sale blocked to prevent loss."
+                    );
+                }
+
                 if ($item['price'] < $inventory->min_price) {
                     throw new \InvalidArgumentException("Price below minimum for {$inventory->name}");
                 }

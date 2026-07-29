@@ -5,63 +5,105 @@
 @section('content')
 <div class="space-y-6">
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Today's Sales -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <!-- Today's Sales (all invoices) -->
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-blue-500 xl:col-span-1">
             <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">Today's Sales</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-1">KES {{ number_format($stats['today_sales'] ?? 0, 2) }}</p>
+                <div class="min-w-0">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Invoiced</p>
+                    <p class="text-xl font-bold text-gray-900 mt-1 truncate">KES {{ number_format($stats['today_sales'] ?? 0, 2) }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ $stats['today_transactions'] ?? 0 }} invoices today</p>
                 </div>
-                <div class="bg-blue-100 p-3 rounded-full">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- Today's Transactions -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">Transactions</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ $stats['today_transactions'] ?? 0 }}</p>
-                </div>
-                <div class="bg-green-100 p-3 rounded-full">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-blue-100 p-2.5 rounded-full flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                 </div>
             </div>
         </div>
 
-        <!-- Low Stock Items -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+        <!-- Closing Sales (paid/completed only) -->
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-teal-500 xl:col-span-1">
             <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">Low Stock Items</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ $stats['low_stock_items'] ?? 0 }}</p>
+                <div class="min-w-0">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Closing Sales</p>
+                    <p class="text-xl font-bold text-gray-900 mt-1 truncate">KES {{ number_format($stats['today_closing_sales'] ?? 0, 2) }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ $stats['today_closing_count'] ?? 0 }} paid today</p>
                 </div>
-                <div class="bg-red-100 p-3 rounded-full">
-                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                <div class="bg-teal-100 p-2.5 rounded-full flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
                 </div>
             </div>
         </div>
 
+        <!-- Daily Profit -->
+        @php $profit = $stats['today_profit'] ?? 0; @endphp
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 {{ $profit >= 0 ? 'border-green-500' : 'border-amber-500' }} xl:col-span-1">
+            <div class="flex items-center justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Today's Profit</p>
+                    <p class="text-xl font-bold mt-1 truncate {{ $profit >= 0 ? 'text-green-700' : 'text-amber-700' }}">
+                        KES {{ number_format($profit, 2) }}
+                    </p>
+                    <p class="text-xs mt-0.5 {{ $profit >= 0 ? 'text-green-600' : 'text-amber-600' }}">
+                        {{ $profit >= 0 ? 'Gross profit (paid sales)' : 'Negative — check pricing' }}
+                    </p>
+                </div>
+                <div class="p-2.5 rounded-full flex-shrink-0 ml-2 {{ $profit >= 0 ? 'bg-green-100' : 'bg-amber-100' }}">
+                    <svg class="w-5 h-5 {{ $profit >= 0 ? 'text-green-600' : 'text-amber-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Items — clickable -->
+        <a href="{{ route('admin.stock-status.index', ['low_stock_only' => 1]) }}"
+           class="bg-white rounded-lg shadow-md p-5 border-l-4 border-red-500 hover:shadow-lg hover:bg-red-50 transition xl:col-span-1 block">
+            <div class="flex items-center justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Low Stock Items</p>
+                    <p class="text-xl font-bold text-gray-900 mt-1">{{ $stats['low_stock_items'] ?? 0 }}</p>
+                    <p class="text-xs text-red-600 mt-0.5 font-medium">View all →</p>
+                </div>
+                <div class="bg-red-100 p-2.5 rounded-full flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
         @if(auth()->user()->isSuperAdmin())
         <!-- Inventory Value -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-purple-500 xl:col-span-1">
             <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">Inventory Value</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-1">KES {{ number_format($stats['total_inventory_value'] ?? 0, 2) }}</p>
+                <div class="min-w-0">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Inventory Value</p>
+                    <p class="text-xl font-bold text-gray-900 mt-1 truncate">KES {{ number_format($stats['total_inventory_value'] ?? 0, 2) }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">at cost price</p>
                 </div>
-                <div class="bg-purple-100 p-3 rounded-full">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-purple-100 p-2.5 rounded-full flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Orders -->
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-orange-400 xl:col-span-1">
+            <div class="flex items-center justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Pending / Credit</p>
+                    <p class="text-xl font-bold text-gray-900 mt-1">{{ $stats['pending_orders'] ?? 0 }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">unpaid invoices</p>
+                </div>
+                <div class="bg-orange-100 p-2.5 rounded-full flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
             </div>
