@@ -464,17 +464,18 @@
                                             </div>
                                             
                                             <div class="space-y-2 pt-2 border-t border-gray-200">
-                                                <!-- Regular price (read-only when bargain is set) -->
+                                                <!-- Regular price — read-only when bargain is active -->
                                                 <div class="flex items-center gap-2">
                                                     <label class="text-xs font-semibold text-gray-700 whitespace-nowrap">Price:</label>
                                                     <input 
                                                         type="number" 
                                                         x-model.number="item.price"
-                                                        @change="updateItemPrice(index)"
+                                                        @change="!item.bargain_price && updateItemPrice(index)"
+                                                        :readonly="!!item.bargain_price"
                                                         :min="item.min_price"
                                                         step="0.01"
                                                         class="flex-1 px-2 py-1.5 border-2 rounded-lg text-sm font-medium"
-                                                        :class="Number(item.price) < Number(item.min_price) ? 'border-red-500 bg-red-50 text-red-700' : 'border-indigo-300 focus:ring-2 focus:ring-indigo-500'"
+                                                        :class="!!item.bargain_price ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : (Number(item.price) < Number(item.min_price) ? 'border-red-500 bg-red-50 text-red-700' : 'border-indigo-300 focus:ring-2 focus:ring-indigo-500')"
                                                         placeholder="Price"
                                                     >
                                                     <span class="text-xs font-semibold text-gray-600 whitespace-nowrap">KES</span>
@@ -1645,33 +1646,49 @@ function posInterface() {
 
         applyBargainPrice(index) {
             const item = this.cart[index];
-            const bargain = Number(item.bargain_price);
+            const rawBargain = item.bargain_price;
             const costPrice = Number(item.cost_price);
 
-            if (!item.bargain_price && item.bargain_price !== 0) {
+            // Bargain field cleared — restore original selling price
+            if (rawBargain === null || rawBargain === '' || rawBargain === undefined) {
+                item.bargain_price = null;
+                item.price = item.original_price ?? item.price;
                 this.calculateTotal();
                 return;
             }
 
+            const bargain = Number(rawBargain);
             if (isNaN(bargain) || bargain <= 0) {
-                item.bargain_price = null;
                 this.calculateTotal();
                 return;
+            }
+
+            // Snapshot original price the first time a bargain is entered
+            if (!item.original_price) {
+                item.original_price = item.price;
             }
 
             if (bargain < costPrice) {
                 this.showNotification(
-                    `Bargain price KES ${this.formatPrice(bargain)} is below cost price KES ${this.formatPrice(costPrice)} — this sale would make a loss.`,
+                    `Bargain price KES ${this.formatPrice(bargain)} is below cost price KES ${this.formatPrice(costPrice)} — this sale would make a loss and cannot be completed.`,
                     'error'
                 );
             }
 
+            // Apply bargain — bypass min_price clamp (cost_price is the real floor)
             item.price = bargain;
             this.calculateTotal();
         },
 
         updateItemPrice(index) {
             const item = this.cart[index];
+
+            // When bargain is active, the price field is read-only — don't interfere
+            if (item.bargain_price) {
+                this.calculateTotal();
+                return;
+            }
+
             const price = Number(item.price);
             const minPrice = Number(item.min_price);
             
@@ -1679,7 +1696,6 @@ function posInterface() {
                 this.showNotification(`Price cannot be below minimum price of KES ${this.formatPrice(item.min_price)}. Price will be set to minimum.`, 'warning');
                 item.price = minPrice;
             } else {
-                // Ensure price is stored as a number
                 item.price = price;
             }
             this.calculateTotal();
